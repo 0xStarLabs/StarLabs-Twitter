@@ -37,7 +37,10 @@ class Twitter:
                 self.username, self.ct0 = utilities.get_account_username(self.account_index, self.client)
 
                 if self.username == "locked":
-                    self._unfreeze()
+                    if self.config['auto_unfreeze'] == "yes":
+                        self._unfreeze()
+                    else:
+                        raise Exception("account blocked.")
 
                 elif self.username == "" or self.ct0 == "":
                     x = 4
