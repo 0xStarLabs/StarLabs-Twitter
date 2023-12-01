@@ -55,7 +55,7 @@ def show_logo():
 def show_dev_info():
     print("\033[36m" + "VERSION: " + "\033[34m" + "1.0" + "\033[34m")
     print("\033[36m"+"DEV: " + "\033[34m" + "https://t.me/StarLabsTech" + "\033[34m")
-    print("\033[36m"+"GitHub: " + "\033[34m" + "https://github.com/0xStarLabs/StarLabs-Discord" + "\033[34m")
+    print("\033[36m"+"GitHub: " + "\033[34m" + "https://github.com/0xStarLabs/StarLabs-Twitter" + "\033[34m")
     print("\033[36m" + "DONATION EVM ADDRESS: " + "\033[34m" + "0x620ea8b01607efdf3c74994391f86523acf6f9e1" + "\033[0m")
     print()
 
