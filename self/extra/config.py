@@ -15,4 +15,9 @@ def read_config() -> dict:
     settings['pause_start'] = int(pause_between_tasks.split("-")[0])
     settings['pause_end'] = int(pause_between_tasks.split("-")[1])
 
+    settings["mobile_proxy"] = str(config['proxy']['mobile_proxy']).strip().lower()
+    settings["change_ip_pause"] = int(config['proxy']['change_ip_pause'].strip())
+
+    settings["data_random"] = str(config['data']['random']).strip().lower()
+
     return settings

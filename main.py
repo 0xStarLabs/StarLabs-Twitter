@@ -8,7 +8,8 @@ from self_process import options
 def main():
     configuration()
 
-    options()
+    while True:
+        options()
 
 
 def configuration():

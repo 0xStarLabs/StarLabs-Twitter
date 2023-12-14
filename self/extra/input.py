@@ -32,6 +32,10 @@ def ask_for_task_data(all_tasks: list) -> dict | None:
         "check dm": {},
         "check valid": False,
         "unfreeze": False,
+        "mutual subscription": {
+            "collect usernames": False,
+            "start": False
+        }
     }
 
     if "Follow" in all_tasks:
@@ -84,6 +88,16 @@ def ask_for_task_data(all_tasks: list) -> dict | None:
     tasks_user_data['check valid'] = True if "Check if account is valid" in all_tasks else False
 
     tasks_user_data['unfreeze'] = True if "Unfreeze Accounts" in all_tasks else False
+
+    if "Mutual Subscription" in all_tasks:
+        user_choice = int(input("Choose want you want to do (1 or 2):\n"
+                                "[1] Collect usernames (required before start subscription)\n"
+                                "[2] Start mutual subscription\n>> ").strip())
+
+        if user_choice == 1:
+            tasks_user_data['mutual subscription']['collect usernames'] = True
+        else:
+            tasks_user_data['mutual subscription']['start'] = True
 
     return tasks_user_data
 

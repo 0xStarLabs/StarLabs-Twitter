@@ -38,6 +38,9 @@ def get_txt_data(tasks: dict) -> tuple[dict, bool]:
             change_data['current password'] = read_txt_file("current passwords", "data/self/current_passwords.txt")
             change_data['new password'] = read_txt_file("new passwords", "data/self/new_passwords.txt")
 
+        if tasks['mutual subscription']['start']:
+            change_data['mutual subscription'] = read_txt_file("my usernames", "data/my_usernames.txt")
+
         change_data['description'] = read_txt_file("description", "data/self/description.txt") if tasks.get('change description') else None
         change_data['username'] = read_txt_file("usernames", "data/self/usernames.txt") if tasks.get('change username') else None
         change_data['name'] = read_txt_file("names", "data/self/names.txt") if tasks.get('change name') else None

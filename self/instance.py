@@ -71,7 +71,9 @@ class Twitter:
                                     headers=like_headers,
                                     json=json_data)
 
-            if "has already favorited tweet" in resp.text or '"favorite_tweet":"Done"' in resp.text:
+            if "Could not authenticate you" in resp.text:
+                logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif "has already favorited tweet" in resp.text or '"favorite_tweet":"Done"' in resp.text:
                 logger.success(f"{self.account_index} | Liked.")
             else:
                 raise Exception(resp.text)
@@ -98,7 +100,9 @@ class Twitter:
                                     json=json_data,
                                     verify=False)
 
-            if "You have already retweeted this Tweet" in resp.text or "create_retweet" in resp.text:
+            if "Could not authenticate you" in resp.text:
+                logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif "You have already retweeted this Tweet" in resp.text or "create_retweet" in resp.text:
                 logger.success(f"{self.account_index} | Retweeted.")
             else:
                 raise Exception(resp.text)
@@ -145,7 +149,9 @@ class Twitter:
                                     }
                                     )
 
-            if resp.json()['id'] == int(rest_id):
+            if "Could not authenticate you" in resp.text:
+                logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif resp.json()['id'] == int(rest_id):
                 logger.success(f"{self.account_index} | Subscribed to {user_to_follow}")
             else:
                 raise Exception(resp.text)
@@ -167,7 +173,9 @@ class Twitter:
                                     json=tweet_json,
                                     verify=False)
 
-            if "rest_id" in resp.text:
+            if "Could not authenticate you" in resp.text:
+                logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif "rest_id" in resp.text:
                 logger.success(f"{self.account_index} | {self.username} | Tweeted.")
             elif "Status is a duplicate" in resp.text:
                 logger.warning(f"{self.account_index} | Tweet is a duplicate.")
@@ -192,7 +200,9 @@ class Twitter:
                                     json={
                                         "variables": "{\"tweet_text\":\"" + tweet_content + "\",\"media\":{\"media_entities\":[{\"media_id\":\"" + media_id + "\",\"tagged_users\":[]}],\"possibly_sensitive\":false},\"withDownvotePerspective\":false,\"withReactionsMetadata\":false,\"withReactionsPerspective\":false,\"withSuperFollowsTweetFields\":true,\"withSuperFollowsUserFields\":true,\"semantic_annotation_ids\":[],\"dark_request\":false,\"__fs_dont_mention_me_view_api_enabled\":false,\"__fs_interactive_text_enabled\":false,\"__fs_responsive_web_uc_gql_enabled\":false}"})
 
-            if "rest_id" in resp.text:
+            if "Could not authenticate you" in resp.text:
+                logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif "rest_id" in resp.text:
                 logger.success(f"{self.account_index} | {self.username} | Tweeted with picture.")
             else:
                 raise Exception(resp.text)
@@ -210,7 +220,9 @@ class Twitter:
                                         "variables": "{\"tweet_text\":\"" + comment_content + "\",\"reply\":{\"in_reply_to_tweet_id\":\"" + tweet_id + "\",\"exclude_reply_user_ids\":[]},\"media\":{\"media_entities\":[],\"possibly_sensitive\":false},\"withDownvotePerspective\":false,\"withReactionsMetadata\":false,\"withReactionsPerspective\":false,\"withSuperFollowsTweetFields\":true,\"withSuperFollowsUserFields\":true,\"semantic_annotation_ids\":[],\"dark_request\":false,\"withUserResults\":true,\"withBirdwatchPivots\":false}",
                                         "queryId": "" + self.query_ids['comment'] + ""})
 
-            if "rest_id" in resp.text:
+            if "Could not authenticate you" in resp.text:
+                logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif "rest_id" in resp.text:
                 logger.success(f"{self.account_index} | {self.username} | Commented.")
             else:
                 raise Exception(resp.text)
@@ -226,7 +238,9 @@ class Twitter:
                                     headers={"content-type": 'application/x-www-form-urlencoded'},
                                     data={"description": new_description})
 
-            if resp.status_code == 200:
+            if "Could not authenticate you" in resp.text:
+                logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif resp.status_code == 200:
                 logger.success(f"{self.account_index} | {self.username} | Changed description.")
             elif "Rate limit exceeded" in resp.text:
                 raise Exception("Rate limit exceeded.")
@@ -245,7 +259,9 @@ class Twitter:
             resp = self.client.post("https://twitter.com/i/api/1.1/account/settings.json",
                                     data={"screen_name": new_username})
 
-            if resp.status_code == 200:
+            if "Could not authenticate you" in resp.text:
+                logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif resp.status_code == 200:
                 logger.success(f"{self.account_index} | {self.username} | Changed username.")
             elif "Rate limit exceeded" in resp.text:
                 raise Exception("Rate limit exceeded.")
@@ -267,7 +283,9 @@ class Twitter:
                                     headers={'content-type': 'application/x-www-form-urlencoded'},
                                     data={"name": new_name})
 
-            if resp.status_code == 200:
+            if "Could not authenticate you" in resp.text:
+                logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif resp.status_code == 200:
                 logger.success(f"{self.account_index} | {self.username} | Changed name.")
             elif "Rate limit exceeded" in resp.text:
                 raise Exception("Rate limit exceeded.")
@@ -286,7 +304,9 @@ class Twitter:
             resp = self.client.post("https://twitter.com/i/api/1.1/account/update_profile_banner.json",
                                     data={"banner": new_background})
 
-            if resp.status_code in (200, 201):
+            if "Could not authenticate you" in resp.text:
+                logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif resp.status_code in (200, 201):
                 logger.success(f"{self.account_index} | {self.username} | Changed background.")
             elif "Rate limit exceeded" in resp.text:
                 raise Exception("Rate limit exceeded.")
@@ -309,7 +329,13 @@ class Twitter:
                                         "password_confirmation": new_password
                                     })
 
-            print(resp.text)
+            if "Could not authenticate you" in resp.text:
+                logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif resp.status_code in (200, 201):
+                logger.success(f"{self.account_index} | Successfully changed the password.")
+            else:
+                raise Exception(resp.text)
+
             return True
         except Exception as err:
             logger.error(f"{self.account_index} | Failed to change password: {err}")
@@ -327,7 +353,9 @@ class Twitter:
                                         "birthdate_year_visibility": "self"
                                     })
 
-            if resp.status_code in (200, 201):
+            if "Could not authenticate you" in resp.text:
+                logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif resp.status_code in (200, 201):
                 logger.success(f"{self.account_index} | {self.username} | Changed birthdate.")
             elif "Rate limit exceeded" in resp.text:
                 raise Exception("Rate limit exceeded.")
@@ -347,7 +375,9 @@ class Twitter:
                                     headers={'content-type': 'application/x-www-form-urlencoded'},
                                     data={"location": new_location})
 
-            if resp.status_code in (200, 201):
+            if "Could not authenticate you" in resp.text:
+                logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif resp.status_code in (200, 201):
                 logger.success(f"{self.account_index} | {self.username} | Changed location.")
             elif "Rate limit exceeded" in resp.text:
                 raise Exception("Rate limit exceeded.")
@@ -366,7 +396,9 @@ class Twitter:
             resp = self.client.post("https://twitter.com/i/api/1.1/account/update_profile_image.json",
                                     data={"image": new_picture})
 
-            if resp.status_code in (200, 201):
+            if "Could not authenticate you" in resp.text:
+                logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif resp.status_code in (200, 201):
                 logger.success(f"{self.account_index} | {self.username} | Changed profile picture.")
             elif "Rate limit exceeded" in resp.text:
                 raise Exception("Rate limit exceeded.")
@@ -392,7 +424,9 @@ class Twitter:
                                     json=tweet_json,
                                     verify=False)
 
-            if "rest_id" in resp.text:
+            if "Could not authenticate you" in resp.text:
+                logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif "rest_id" in resp.text:
                 logger.success(f"{self.account_index} | {self.username} | Tweeted.")
             else:
                 raise Exception(resp.text)
@@ -489,7 +523,9 @@ class Twitter:
                                     ,
                                     )
 
-            if "rest_id" in resp.text:
+            if "Could not authenticate you" in resp.text:
+                logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif "rest_id" in resp.text:
                 logger.success(f"{self.account_index} | {self.username} | Commented.")
             else:
                 raise Exception(resp.text)

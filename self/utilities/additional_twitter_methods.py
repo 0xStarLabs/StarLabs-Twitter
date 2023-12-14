@@ -86,3 +86,5 @@ def set_ct0_response_token(resp, client: requests.Session):
     ct0 = resp.json().get("ct0")
     client.cookies.update({"ct0": ct0})
     client.headers.update({"x-csrf-token": ct0})
+
+
