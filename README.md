@@ -1,7 +1,7 @@
 #  StarLabs - Twitter 
 
 
-![Logo](https://i.postimg.cc/kGNfcw5f/twitter.jpg)
+![Logo](https://ibb.co/rb6M1HT)
 
 ## [SEE ENGLISH VERSION BELOW ](https://github.com/0xStarLabs/StarLabs-Twitter#english-version)👇
 
