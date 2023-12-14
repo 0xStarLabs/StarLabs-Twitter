@@ -42,6 +42,8 @@
 
 🟢 Проверка аккаунта на валидность
 
+🟢 Взаимная подписка между аккаунтами
+
 
 ## 🚀 Installation
 ```
@@ -65,7 +67,9 @@ python main.py
 | pause_between_tasks | Пауза между каждым действием |
 | 1stcaptcha_api_key | Ключ от https://1stcaptcha.com/ |
 | auto_unfreeze | Автоматическая разблокировка аккаунтов |
-
+| mobile_proxy | Мобильные прокси |
+| change_ip_pause | Пауза после смены айпи мобильных прокси |
+| random | Брать данные из тхт файлов в случайном порядке |
 
 ## 🗂️ Data
 
@@ -79,6 +83,8 @@ python main.py
 | locked_accounts.txt | Содержит аккаунты которые временно заблокированные |
 | tweets.txt | Содержит текст для функции твитов |
 | proxies.txt | Содержит прокси в формате user:pass@ip:port |
+| my_usernames | Содержит юзернеймы аккаунтов |
+| ip_change_links | Содержит ссылки для смены айпи мобильных прокси |
 
 ## Дисклеймер
 Автоматизация учетных записей пользователей Twitter, также известных как самостоятельные боты, является нарушением Условий обслуживания и правил сообщества Twitter и приведет к закрытию вашей учетной записи (аккаунтов). Рекомендуется осмотрительность. Я не буду нести ответственность за ваши действия. Прочтите об Условиях обслуживания Twitter и Правилах сообщества.
@@ -111,6 +117,8 @@ python main.py
 
 🟢 Checking account validity
 
+🟢 Mutual subscription between accounts
+
 ## 🚀 Installation
 ```
 git clone https://github.com/0xStarLabs/StarLabs-Twitter.git
@@ -132,7 +140,9 @@ python main.py
 | pause_between_tasks | pause between each action |
 | 1stcaptcha_api_key | 1stcaptcha_api_key | Key to https://1stcaptcha.com/ |
 | auto_unfreeze | Automatically unlock accounts |
-
+| mobile_proxy | Mobile proxy yes/no |
+| change_ip_pause | Pause after changing the mobile proxy's IP |
+| random | Take data from txt files in random order |
 
 
 ## 🗂️ Data
@@ -147,6 +157,9 @@ The data is in the data folder:
 | locked_accounts.txt | Contains accounts that are temporarily locked |
 | tweets.txt | Contains the text for the tweets function |
 | proxies.txt | Contains proxies in the format user:pass@ip:port |
+| my_usernames | Contains account usernames |
+| ip_change_links | Contains links to change mobile proxy IPs |
+
 
 ## Disclaimer
 
