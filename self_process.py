@@ -47,7 +47,7 @@ def options():
     twitters = extra.read_txt_file("cookies", "data/accounts.txt")
     proxies = extra.read_txt_file("proxies", "data/proxies.txt")
     indexes = [i + 1 for i in range(len(twitters))]
-    query_ids = extra.get_query_ids()
+    query_ids = extra.get_query_ids(proxies)
     mobile_proxy_queue = queue.Queue()
     config = extra.read_config()
     failed_queue = queue.Queue()

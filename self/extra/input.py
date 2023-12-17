@@ -110,12 +110,22 @@ def no_proxies() -> bool:
     return True if user_choice == 1 else False
 
 
-def get_query_ids() -> dict:
+def get_query_ids(proxies: list) -> dict:
     try:
         for x in range(4):
             try:
-                main_resp = default_requests.get('https://abs.twimg.com/responsive-web/client-web/main.f3ada2b5.js', verify=False, timeout=120)
-                create_tweet_resp = default_requests.get("https://abs.twimg.com/responsive-web/client-web/main.70ac9f25.js", verify=False, timeout=120)
+                if len(proxies) != 0:
+                    proxies = {
+                        'http': f'http://{proxies[0]}',
+                        'https': f'http://{proxies[0]}',
+                    }
+
+                    main_resp = default_requests.get('https://abs.twimg.com/responsive-web/client-web/main.f3ada2b5.js', proxies=proxies, verify=False, timeout=120)
+                    create_tweet_resp = default_requests.get("https://abs.twimg.com/responsive-web/client-web/main.70ac9f25.js", proxies=proxies, verify=False, timeout=120)
+
+                else:
+                    main_resp = default_requests.get('https://abs.twimg.com/responsive-web/client-web/main.f3ada2b5.js', verify=False, timeout=120)
+                    create_tweet_resp = default_requests.get("https://abs.twimg.com/responsive-web/client-web/main.70ac9f25.js", verify=False, timeout=120)
                 break
 
             except:
