@@ -151,6 +151,9 @@ class Twitter:
 
             if "Could not authenticate you" in resp.text:
                 logger.error(f"{self.account_index} | Account locked or token does not work.")
+            elif "You can't follow yourself." in resp.text:
+                logger.error(f"{self.account_index} | You can't follow yourself.")
+
             elif resp.json()['id'] == int(rest_id):
                 logger.success(f"{self.account_index} | Subscribed to {user_to_follow}")
             else:

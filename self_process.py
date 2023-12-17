@@ -120,7 +120,7 @@ def account_flow(lock: threading.Lock, account_index: int, twitter: str, proxy: 
 
         twitter_instance = self.Twitter(account_index, auth_token, proxy, config, query_ids)
 
-        if tasks_data['mutual subscription']['start'] or tasks_data['mutual subscription']['start']:
+        if tasks_data['mutual subscription']['start'] or tasks_data['mutual subscription']['collect usernames']:
             if tasks_data['mutual subscription']['collect usernames']:
                 with lock:
                     with open("data/my_usernames.txt", "a") as f:

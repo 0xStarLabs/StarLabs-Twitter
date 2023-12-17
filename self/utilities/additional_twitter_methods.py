@@ -58,6 +58,7 @@ def get_account_username(account_index: int, client: requests.Session) -> tuple[
 
         for x in range(4):
             resp = client.get(username_url, verify=False, timeout=120)
+
             ct0 = resp.cookies.get("ct0")
 
             if resp.json().get('screen_name') is not None:
