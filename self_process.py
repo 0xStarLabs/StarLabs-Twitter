@@ -304,9 +304,15 @@ def account_flow(lock: threading.Lock, account_index: int, twitter: str, proxy: 
             random_pause(config['pause_start'], config['pause_end'])
 
         if tasks_data['check valid']:
-            ok = wrapper(twitter_instance.check_suspended, config['max_tasks_retries'])
+            ok, status = wrapper(twitter_instance.check_suspended, config['max_tasks_retries'])
             if not ok:
                 report = True
+            else:
+                if status != "ban":
+                    with lock:
+                        with open("data/valid_accounts.txt", "a") as f:
+                            f.write(f"{twitter_instance.auth_token}\n")
+
             random_pause(config['pause_start'], config['pause_end'])
 
         if tasks_data['unfreeze']:

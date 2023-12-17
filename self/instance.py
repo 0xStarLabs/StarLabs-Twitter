@@ -609,19 +609,20 @@ class Twitter:
             logger.error(f"{self.account_index} | Failed to check dm: {err}")
             return False
 
-    def check_suspended(self) -> bool:
+    def check_suspended(self) -> tuple[bool, str]:
         try:
             resp = self.client.get(f"https://api.twitter.com/1.1/users/show.json?screen_name={self.username.replace('@', '')}")
 
             if "User has been suspended" in resp.text:
                 logger.warning(f"{self.account_index} | {self.username} | User has been suspended.")
+                return True, "ban"
             else:
                 logger.success(f"{self.account_index} | {self.username} | Shadow Ban not found")
+                return True, ""
 
-            return True
         except Exception as err:
             logger.error(f"{self.account_index} | Failed to check if suspended: {err}")
-            return False
+            return False, ""
 
     def _unfreeze(self) -> bool:
         try:
