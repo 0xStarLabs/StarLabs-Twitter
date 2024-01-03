@@ -67,7 +67,7 @@ def options():
             mobile_proxy_queue.put(i)
         cycle = []
         for i in range(len(proxies)):
-            data_list = (proxies[i], ip_change_links[i], mobile_proxy_queue, config, lock, twitters, change_data, tasks_data, failed_queue, query_ids)
+            data_list = (proxies[i], ip_change_links[i], mobile_proxy_queue, config, lock, twitters, change_data, tasks_data, failed_queue, query_ids, usernames_queue)
             cycle.append(data_list)
 
         with ThreadPoolExecutor() as executor:
@@ -391,7 +391,7 @@ def update_grabbed_cookies(login: str, password: str, auth_token: str, cookies: 
 
 def mobile_proxy_wrapper(data):
     # proxies[i], ip_change_links[i], mobile_proxy_queue, config, lock, twitters, change_data, tasks_data, failed_queue, query_ids
-    proxy, ip_change_link, q, config, lock, twitters, change_data, tasks_data, failed_queue, query_ids = data[:10]
+    proxy, ip_change_link, q, config, lock, twitters, change_data, tasks_data, failed_queue, query_ids, usernames_queue = data[:11]
 
     while not q.empty():
         i = q.get()
@@ -411,7 +411,7 @@ def mobile_proxy_wrapper(data):
                     logger.error(f"{i + 1} | Mobile proxy error! Check your ip change link: {err}")
                     time.sleep(2)
 
-            account_flow(lock, i + 1, twitters[i], proxy, config, change_data, tasks_data, failed_queue, query_ids)
+            account_flow(lock, i + 1, twitters[i], proxy, config, change_data, tasks_data, failed_queue, query_ids, usernames_queue)
 
         except Exception as err:
             logger.error(f"{i + 1} | Mobile proxy flow error: {err}")
