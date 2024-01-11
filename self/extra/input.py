@@ -110,44 +110,6 @@ def no_proxies() -> bool:
     return True if user_choice == 1 else False
 
 
-def get_query_ids(proxies: list) -> dict:
-    try:
-        for x in range(4):
-            try:
-                if len(proxies) != 0:
-                    proxies = {
-                        'http': f'http://{proxies[0]}',
-                        'https': f'http://{proxies[0]}',
-                    }
-
-                    main_resp = default_requests.get('https://abs.twimg.com/responsive-web/client-web/main.f3ada2b5.js', proxies=proxies, verify=False, timeout=120)
-                    create_tweet_resp = default_requests.get("https://abs.twimg.com/responsive-web/client-web/main.70ac9f25.js", proxies=proxies, verify=False, timeout=120)
-
-                else:
-                    main_resp = default_requests.get('https://abs.twimg.com/responsive-web/client-web/main.f3ada2b5.js', verify=False, timeout=120)
-                    create_tweet_resp = default_requests.get("https://abs.twimg.com/responsive-web/client-web/main.70ac9f25.js", verify=False, timeout=120)
-                break
-
-            except:
-                if x == 3:
-                    raise Exception("can't connect to the twitter server. Try to use a VPN.")
-                logger.error(f"Failed to get query IDs data | {x + 1}/4")
-                sleep(randint(2, 5))
-
-        return {
-            'subscribe': main_resp.text.split('fDBV:function(e,t){e.exports={queryId:"')[-1].split('"')[0],
-            'retweet': main_resp.text.split('user_spam_reports"]}')[1].split('operationName:"CreateRetweet')[0].split('queryId:"')[1].split('"')[0],
-            'like': main_resp.text.split('"x/WR":function(e,t){e.exports={queryId:"')[-1].split('"')[0],
-            'comment': main_resp.text.split('operationName:"ListProductSubscriptions",operationType:"query"')[-1].split('operationName:"CreateTweet')[0].split('queryId:"')[-1].split('"')[0],
-            'tweet': create_tweet_resp.text.split('qpTX:function(e,t){e.exports={queryId:"')[-1].split('"')[0],
-            'bearer_token': 'Bearer ' + main_resp.text.split('const r="ACTION_FLUSH",i="ACTION_REFRESH')[-1].split(',l="d_prefs"')[0].split(',s="')[-1].split('"')[0]
-        }
-
-    except Exception as err:
-        logger.error(f"Failed to get requests ID: {err}")
-        return {}
-
-
 def get_user_tweet_id_input(text_to_ask: str) -> str:
     try:
         user_input = input(text_to_ask).strip()

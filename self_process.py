@@ -47,7 +47,7 @@ def options():
     twitters = extra.read_txt_file("cookies", "data/accounts.txt")
     proxies = extra.read_txt_file("proxies", "data/proxies.txt")
     indexes = [i + 1 for i in range(len(twitters))]
-    query_ids = extra.get_query_ids(proxies)
+    query_ids = extra.read_query_ids()
     mobile_proxy_queue = queue.Queue()
     config = extra.read_config()
     failed_queue = queue.Queue()
@@ -312,6 +312,8 @@ def account_flow(lock: threading.Lock, account_index: int, twitter: str, proxy: 
                     with lock:
                         with open("data/valid_accounts.txt", "a") as f:
                             f.write(f"{twitter_instance.auth_token}\n")
+                else:
+                    report_locked_twitter(auth_token, lock)
 
             random_pause(config['pause_start'], config['pause_end'])
 

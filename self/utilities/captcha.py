@@ -193,14 +193,15 @@ class TwoCaptcha:
             logger.error(f"{self.account_index} | Failed to send captcha request to 2captcha: {err}")
             return "", False
 
-    def solve_funcaptcha(self, site_key: str, website_url: str) -> tuple[str, bool]:
+    def solve_funcaptcha(self, site_key: str, website_url: str, user_agent: str) -> tuple[str, bool]:
         try:
             captcha_data = {
                 "key": self.api_key,
                 "method": "funcaptcha",
                 "publickey": site_key,
-                "surl": website_url,
+                "surl": "https://client-api.arkoselabs.com",
                 "pageurl": website_url,
+                "userAgent": user_agent,
                 "json": 1
             }
 
@@ -229,9 +230,9 @@ class TwoCaptcha:
                                                  "id": int(task_id),
                                                  "json": 1
                                              })
-                print(resp.text)
+
                 if resp.json()["status"] == 1:
-                    logger.success(f"{self.account_index} | Captcha solved! Answer -> {resp.json()['request']}")
+                    logger.success(f"{self.account_index} | Captcha solved!")
 
                     response = resp.json()['request']
                     return response, True
@@ -305,3 +306,71 @@ class OneCaptcha:
 
         logger.error(f"{self.account_index} | Failed to get captcha solution")
         return ""
+
+
+class Capsolver:
+    def __init__(self, account_index: int, api_key: str, client: requests.Session, proxy: str):
+        self.account_index = account_index
+        self.api_key = api_key
+        self.client = client
+        self.proxy = proxy
+
+    def solve_funcaptcha(self, site_key: str, url: str) -> tuple[str, bool]:
+        try:
+            if self.proxy != "":
+                captcha_data = {
+                    "clientKey": self.api_key,
+                    "task": {
+                        "type": "FunCaptchaTaskProxyLess",
+                        "websiteURL": url,
+                        "websiteKey": site_key,
+                    }
+                }
+            else:
+                logger.error(f"{self.account_index} | Capsolver requires proxy for solving FunCaptcha.")
+                return "", False
+
+            resp = default_requests.post("https://api.capsolver.com/createTask",
+                                         json=captcha_data)
+
+            if resp.status_code == 200:
+                logger.info(f"{self.account_index} | Starting to solve FunCaptcha...")
+                return self.get_captcha_result(resp.json()["taskId"])
+
+            else:
+                logger.error(f"{self.account_index} | Failed to send FunCaptcha request: {resp.json()['errorDescription']}")
+                return "", False
+
+        except Exception as err:
+            logger.error(f"{self.account_index} | Failed to send FunCaptcha request to Capsolver: {err}")
+            return "", False
+
+    def get_captcha_result(self, task_id: str) -> tuple[Any, bool] | tuple[str, bool]:
+        for i in range(30):
+            try:
+                resp = default_requests.post("https://api.capsolver.com/getTaskResult",
+                                             json={
+                                                 "clientKey": self.api_key,
+                                                 "taskId": task_id
+                                             })
+
+                if resp.status_code == 200:
+                    if resp.json()['errorId'] != 0:
+                        logger.error(f"{self.account_index} | FunCaptcha failed!")
+                        return "", False
+
+                    elif resp.json()['status'] == "ready":
+                        logger.success(f"{self.account_index} | FunCaptcha solved!")
+
+                        response = resp.json()['solution']['token']
+                        return response, True
+
+            except Exception as err:
+                logger.error(f"{self.account_index} | Failed to get FunCaptcha solution: {err}")
+                return "", False
+            # sleep between result requests
+            sleep(1)
+
+        logger.error(f"{self.account_index} | Failed to get FunCaptcha solution")
+        return "", False
+

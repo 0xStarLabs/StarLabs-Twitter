@@ -7,6 +7,7 @@ import json
 
 def set_auth_cookies(account_index: int, client: requests.Session, twitter_auth: str, bearer_token: str) -> str:
     try:
+        bearer_token = "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"
         # json cookies
         if '[' in twitter_auth and ']' in twitter_auth:
             json_part = twitter_auth.split('[')[-1].split(']')[0]

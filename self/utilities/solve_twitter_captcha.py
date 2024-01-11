@@ -4,24 +4,27 @@ from playwright_stealth import stealth_sync
 from loguru import logger
 import time
 
-from . import OneCaptcha
+from . import TwoCaptcha
 
 
 class SolveTwitterCaptcha:
-    def __init__(self, auth_token: str, ct0: str, capmonster_client: OneCaptcha, account_index: int):
+    def __init__(self, auth_token: str, ct0: str, two_captcha: TwoCaptcha, account_index: int, user_agent: str):
         self.auth_token = auth_token
         self.account_index = account_index
         self.ct0 = ct0
-        self.capmonster_client = capmonster_client
-
+        self.two_captcha = two_captcha
+        self.user_agent = user_agent
     @staticmethod
-    def wait_for_url(page, url, timeout=60):
-        start_time = time.time()
-        while time.time() - start_time < timeout:
-            if url in page.url:
-                return True
-            time.sleep(1)
-        logger.error('Timeout waiting for URL')
+    def wait_for_url(page, url, timeout=90):
+        try:
+            start_time = time.time()
+            while time.time() - start_time < timeout:
+                if url in page.url:
+                    return True
+                time.sleep(1)
+            logger.error('Timeout waiting for URL')
+        except:
+            pass
         return False
 
     def wait_for_multiple_conditions(self, page, selector, url, timeout=60000) -> tuple[any, any]:
@@ -92,7 +95,7 @@ class SolveTwitterCaptcha:
                         logger.success(f'{self.account_index} | Account successfully unfrozen')
                         return True
 
-                    if element and element.get_attribute('value') == 'Continue to Twitter':
+                    if element and element.get_attribute('value') == 'Continue to X':
                         element.click()
                         logger.success(f'{self.account_index} | Account successfully unfrozen')
                         return True
@@ -108,9 +111,9 @@ class SolveTwitterCaptcha:
                         page.wait_for_selector('#arkose_iframe')
 
                     for _ in range(6):
-                        captcha_result = self.capmonster_client.solve_funcaptcha('0152B4EB-D2DC-460A-89A1-629838B529C9', "https://twitter.com/account/access")
+                        captcha_result, ok = self.two_captcha.solve_funcaptcha('0152B4EB-D2DC-460A-89A1-629838B529C9', "https://twitter.com/account/access", self.user_agent)
 
-                        if captcha_result == "":
+                        if not ok:
                             continue
 
                         logger.info(f'{self.account_index} | Captcha solution received, trying to send')
@@ -124,13 +127,15 @@ class SolveTwitterCaptcha:
 
                         logger.error(f'{self.account_index} | Failed to detect captcha element on the page')
                         continue
+
                     iframe = iframe_element.content_frame()
                     iframe.evaluate(
                         f'parent.postMessage(JSON.stringify({{eventId:"challenge-complete",payload:{{sessionToken:"{captcha_result}"}}}}),"*")')
+
                     page.wait_for_load_state(state='networkidle',
                                              timeout=60000)
 
-                    if not self.wait_for_url(page=page, url='twitter.com/home', timeout=15):
+                    if not self.wait_for_url(page=page, url='twitter.com/home', timeout=20):
                         continue
 
                     logger.success(f'{self.account_index} | Account successfully unfrozen')

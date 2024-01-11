@@ -148,11 +148,13 @@ class Twitter:
                                         'user_id': rest_id,
                                     }
                                     )
-
+            
             if "Could not authenticate you" in resp.text:
                 logger.error(f"{self.account_index} | Account locked or token does not work.")
             elif "You can't follow yourself." in resp.text:
                 logger.error(f"{self.account_index} | You can't follow yourself.")
+            elif "Your account is suspended" in resp.text:
+                logger.error(f"{self.account_index} | Your account is suspended.")
 
             elif resp.json()['id'] == int(rest_id):
                 logger.success(f"{self.account_index} | Subscribed to {user_to_follow}")
@@ -613,7 +615,7 @@ class Twitter:
         try:
             resp = self.client.get(f"https://api.twitter.com/1.1/users/show.json?screen_name={self.username.replace('@', '')}")
 
-            if "User has been suspended" in resp.text:
+            if "User has been suspended" in resp.text or resp.json()['suspended']:
                 logger.warning(f"{self.account_index} | {self.username} | User has been suspended.")
                 return True, "ban"
             else:
@@ -627,8 +629,8 @@ class Twitter:
     def _unfreeze(self) -> bool:
         try:
             logger.info(f"{self.account_index} | Starting to unfreeze the account.")
-            one_captcha = utilities.OneCaptcha(self.account_index, self.config['1stcaptcha_api_key'], self.client)
-            captcha_instance = utilities.SolveTwitterCaptcha(self.auth_token, self.ct0, one_captcha, self.account_index)
+            two_captcha = utilities.TwoCaptcha(self.account_index, self.config['2captcha_api_key'], self.client, self.proxy)
+            captcha_instance = utilities.SolveTwitterCaptcha(self.auth_token, self.ct0, two_captcha, self.account_index, self.user_agent)
             return captcha_instance.solve_captcha(self.proxy)
 
         except Exception as err:
