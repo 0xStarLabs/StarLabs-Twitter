@@ -1,0 +1,22 @@
+info:
+  # https://2captcha.com/
+  2captcha_api_key: ""
+  
+  max_tasks_retries: 1
+  pause_between_tasks: "1-3"
+  pause_between_accounts: "1-3"
+  
+  # "0-0" for all accounts
+  account_range: "0-0"
+  
+  # unfreeze doesn't work for now. wait for update
+  auto_unfreeze: "no"
+    
+
+proxy:
+  mobile_proxy: "no"
+  change_ip_pause: 20
+  
+  
+data:
+  random: "no"
