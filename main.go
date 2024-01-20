@@ -130,17 +130,32 @@ func options() {
 	close(failedAccounts)
 	close(lockedAccounts)
 	close(usernames)
-	// write down logs about accounts to txt files
+	failedAccountsSet := make(map[string]struct{})
+	lockedAccountsSet := make(map[string]struct{})
+
 	var failedCounter int
 	var lockedCounter int
+
 	for account := range failedAccounts {
 		failedCounter++
+		failedAccountsSet[account] = struct{}{}
 		extra.AppendToFile("data/failed_accounts.txt", account)
 	}
+
 	for account := range lockedAccounts {
 		lockedCounter++
+		lockedAccountsSet[account] = struct{}{}
 		extra.AppendToFile("data/locked_accounts.txt", account)
 	}
+
+	for _, account := range accounts {
+		if _, failed := failedAccountsSet[account]; !failed {
+			if _, locked := lockedAccountsSet[account]; !locked {
+				extra.AppendToFile("data/valid_accounts.txt", account)
+			}
+		}
+	}
+	
 	if slices.Contains(userChoice, "Check if account is valid") {
 		extra.RewriteChannelToFile("data/my_usernames.txt", usernames)
 	}
