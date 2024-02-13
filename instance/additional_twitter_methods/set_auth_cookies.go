@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Danny-Dasilva/CycleTLS/cycletls"
+	http "github.com/bogdanfinn/fhttp"
 	"math/rand"
 	"strings"
 	"twitter/utils"
@@ -28,7 +28,7 @@ func SetAuthCookies(accountIndex int, cookieClient *utils.CookieClient, twitterA
 		for _, cookie := range cookiesJson {
 			if name, ok := cookie["name"]; ok {
 				value := cookie["value"]
-				cookieClient.AddCookies([]cycletls.Cookie{{Name: name, Value: value}})
+				cookieClient.AddCookies([]http.Cookie{{Name: name, Value: value}})
 				if name == "ct0" {
 					csrfToken = value
 				}
@@ -41,7 +41,7 @@ func SetAuthCookies(accountIndex int, cookieClient *utils.CookieClient, twitterA
 		// auth token
 	} else if len(twitterAuth) < 60 {
 		csrfToken = generateMD5Token()
-		cookieClient.AddCookies([]cycletls.Cookie{
+		cookieClient.AddCookies([]http.Cookie{
 			{Name: "auth_token", Value: twitterAuth},
 			{Name: "ct0", Value: csrfToken},
 			{Name: "des_opt_in", Value: "Y"},

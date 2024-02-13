@@ -1,9 +1,8 @@
 package instance
 
 import (
-	"compress/gzip"
 	"fmt"
-	http "github.com/Danny-Dasilva/fhttp"
+	http "github.com/bogdanfinn/fhttp"
 	"io"
 	"strings"
 	"twitter/extra"
@@ -23,7 +22,7 @@ func (twitter *Twitter) ChangeBackground(pictureBase64Encoded string) bool {
 		data := strings.NewReader(stringData)
 
 		// Create new request
-		req, err := http.NewRequest("POST", pictureURL, data)
+		req, err := http.NewRequest(http.MethodPost, pictureURL, data)
 		if err != nil {
 			twitter.logger.Error("%d | Failed to build change background request: %s", twitter.index, err.Error())
 			continue
@@ -73,20 +72,7 @@ func (twitter *Twitter) ChangeBackground(pictureBase64Encoded string) bool {
 		}
 		defer resp.Body.Close()
 
-		var reader io.ReadCloser
-		switch resp.Header.Get("Content-Encoding") {
-		case "gzip":
-			reader, err = gzip.NewReader(resp.Body)
-			if err != nil {
-				twitter.logger.Error("%d | Failed to create gzip reader while change background: %s", twitter.index, err.Error())
-				continue
-			}
-			defer reader.Close()
-		default:
-			reader = resp.Body
-		}
-
-		bodyBytes, err := io.ReadAll(reader)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			twitter.logger.Error("%d | Failed to read change background response body: %s", twitter.index, err.Error())
 			continue

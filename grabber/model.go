@@ -1,7 +1,7 @@
 package grabber
 
 import (
-	http "github.com/Danny-Dasilva/fhttp"
+	tlsClient "github.com/bogdanfinn/tls-client"
 	"twitter/extra"
 	"twitter/utils"
 )
@@ -21,7 +21,7 @@ type Grabber struct {
 	guestToken string
 	flowToken  string
 
-	client  *http.Client
+	client  tlsClient.HttpClient
 	cookies *utils.CookieClient
 	logger  extra.Logger
 }
@@ -37,15 +37,14 @@ func (grabber *Grabber) InitGrabber(index int, login string, password string, pr
 }
 
 func (grabber *Grabber) prepareClient() bool {
-	//var err error
+	var err error
 
 	for i := 0; i < 5; i++ {
-		tlsBuildInstance := utils.GetRandomTLSConfig()
-
-		grabber.userAgent = tlsBuildInstance.UserAgent
-		grabber.client = utils.CreateHttpClient(grabber.proxy, tlsBuildInstance)
+		grabber.client, err = utils.CreateHttpClient(grabber.proxy)
+		if err != nil {
+			return false
+		}
 		grabber.cookies = utils.NewCookieClient()
-
 		return true
 	}
 

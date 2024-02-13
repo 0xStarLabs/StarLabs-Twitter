@@ -1,7 +1,7 @@
 package extra
 
 import (
-	http "github.com/Danny-Dasilva/fhttp"
+	http "github.com/bogdanfinn/fhttp"
 	"math/rand"
 	"strings"
 	"time"

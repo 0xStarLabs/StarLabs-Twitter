@@ -214,6 +214,11 @@ func GetTasksTargetInfo(tasks []string) (TasksTargetInfo, bool) {
 			}
 			tasksInfo.MutualSubsFollowersCount = number
 		}
+		if task == "Vote in the poll" {
+			tasksInfo.Votes.Links = userInputToSlice("Paste your link to the poll")
+			answer, _ := UserInputInteger("Enter the sequential number of the answer ( 1 2 3 etc.)")
+			tasksInfo.Votes.Choice = strconv.Itoa(answer)
+		}
 	}
 	return tasksInfo, true
 }
@@ -282,4 +287,8 @@ type TasksTargetInfo struct {
 	CommentTweetLinks        []string
 	CheckMessagesLastDays    int
 	MutualSubsFollowersCount int
+	Votes                    struct {
+		Links  []string
+		Choice string
+	}
 }

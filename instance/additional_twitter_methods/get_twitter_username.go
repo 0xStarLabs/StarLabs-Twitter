@@ -1,11 +1,11 @@
 package additional_twitter_methods
 
 import (
-	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"fmt"
-	http "github.com/Danny-Dasilva/fhttp"
+	http "github.com/bogdanfinn/fhttp"
+	tlsClient "github.com/bogdanfinn/tls-client"
 	"io"
 	"strings"
 	"twitter/extra"
@@ -13,12 +13,12 @@ import (
 )
 
 // GetTwitterUsername get and return Twitter account's username
-func GetTwitterUsername(index int, httpClient *http.Client, cookieClient *utils.CookieClient, bearerToken string, csrfToken string) (string, string, error) {
+func GetTwitterUsername(index int, httpClient tlsClient.HttpClient, cookieClient *utils.CookieClient, bearerToken string, csrfToken string) (string, string, error) {
 	for i := 0; i < 1; i++ {
 		baseURL := "https://api.twitter.com/1.1/account/settings.json?include_mention_filter=true&include_nsfw_user_flag=true&include_nsfw_admin_flag=true&include_ranked_timeline=true&include_alt_text_compose=true&ext=ssoConnections&include_country_code=true&include_ext_dm_nsfw_media_filter=true&include_ext_sharing_audiospaces_listening_data_with_followers=true"
 
 		// Create new request
-		req, err := http.NewRequest("GET", baseURL, nil)
+		req, err := http.NewRequest(http.MethodGet, baseURL, nil)
 		if err != nil {
 			extra.Logger{}.Warning("%d | Failed to build activate request: %s", index, err.Error())
 			continue
@@ -38,24 +38,6 @@ func GetTwitterUsername(index int, httpClient *http.Client, cookieClient *utils.
 			"x-csrf-token":          {csrfToken},
 			"x-twitter-active-user": {"no"},
 			// x-client-transaction-id
-			http.HeaderOrderKey: {
-				"accept",
-				"accept-encoding",
-				"authorization",
-				"cookie",
-				"origin",
-				"referer",
-				"sec-ch-ua",
-				"sec-ch-ua-mobile",
-				"sec-ch-ua-platform",
-				"sec-fetch-dest",
-				"sec-fetch-mode",
-				"sec-fetch-site",
-				"user-agent",
-				"x-csrf-token",
-				"x-twitter-active-user",
-			},
-			http.PHeaderOrderKey: {":authority", ":method", ":path", ":scheme"},
 		}
 
 		resp, err := httpClient.Do(req)
@@ -73,20 +55,7 @@ func GetTwitterUsername(index int, httpClient *http.Client, cookieClient *utils.
 			continue
 		}
 
-		var reader io.ReadCloser
-		switch resp.Header.Get("Content-Encoding") {
-		case "gzip":
-			reader, err = gzip.NewReader(resp.Body)
-			if err != nil {
-				extra.Logger{}.Error("%d | Failed to create gzip reader while getting username: %s", index, err.Error())
-				continue
-			}
-			defer reader.Close()
-		default:
-			reader = resp.Body
-		}
-
-		bodyBytes, err := io.ReadAll(reader)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			extra.Logger{}.Error("%d | Failed to read response body: %s", index, err.Error())
 			continue

@@ -1,81 +1,42 @@
 package utils
 
 import (
-	"context"
 	"fmt"
-	"github.com/Danny-Dasilva/CycleTLS/cycletls"
-	http "github.com/Danny-Dasilva/fhttp"
-	"golang.org/x/net/proxy"
-	"math/rand"
-	"net"
-	"net/url"
-	"time"
+	http "github.com/bogdanfinn/fhttp"
+	tlsClient "github.com/bogdanfinn/tls-client"
+	"github.com/bogdanfinn/tls-client/profiles"
+	"strings"
+	"twitter/extra"
 )
 
-func CreateHttpClient(proxies string, tlsBuildInstance TLSBuild) *http.Client {
-	var client *http.Client
+func CreateHttpClient(proxies string) (tlsClient.HttpClient, error) {
 
+	options := []tlsClient.HttpClientOption{
+		tlsClient.WithClientProfile(profiles.Chrome_120),
+		tlsClient.WithRandomTLSExtensionOrder(),
+		tlsClient.WithInsecureSkipVerify(),
+		tlsClient.WithTimeoutSeconds(30),
+	}
 	if proxies != "" {
-		proxyFormat := fmt.Sprintf("http://%s", proxies)
-
-		proxyDialer, err := createProxyDialer(proxyFormat)
-		if err != nil {
-			fmt.Println("Error creating proxy dialer:", err)
-		}
-
-		client = &http.Client{
-			Transport: cycletls.NewTransportWithProxy(tlsBuildInstance.JA3, tlsBuildInstance.UserAgent, proxyDialer),
-			Timeout:   60 * time.Second,
-		}
-	} else {
-		client = &http.Client{
-			Transport: cycletls.NewTransport(tlsBuildInstance.JA3, tlsBuildInstance.UserAgent),
-			Timeout:   60 * time.Second}
+		options = append(options, tlsClient.WithProxyUrl(fmt.Sprintf("http://%s", proxies)))
 	}
 
-	return client
-}
-
-func createProxyDialer(proxyStr string) (proxy.ContextDialer, error) {
-	if proxyStr == "" {
-		return nil, fmt.Errorf("proxy string is empty")
-	}
-
-	proxyURL, err := url.Parse(proxyStr)
+	client, err := tlsClient.NewHttpClient(tlsClient.NewNoopLogger(), options...)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing proxy URL: %v", err)
+
+		extra.Logger{}.Error("Failed to create Http Client: %s", err)
+		return nil, err
 	}
 
-	dialer, err := proxy.FromURL(proxyURL, proxy.Direct)
-	if err != nil {
-		return nil, fmt.Errorf("error creating proxy dialer from URL: %v", err)
-	}
-
-	return &contextDialerWrapper{dialer: dialer}, nil
+	return client, nil
 }
 
-type contextDialerWrapper struct {
-	dialer proxy.Dialer
-}
-
-func (d *contextDialerWrapper) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	return d.dialer.Dial(network, address)
-}
-
-func GetRandomTLSConfig() TLSBuild {
-	rand.Seed(time.Now().UnixNano())
-
-	builds := make([]string, 0, len(TLSBuilds))
-	for k := range TLSBuilds {
-		builds = append(builds, k)
+func CookiesToHeader(allCookies map[string][]*http.Cookie) string {
+	var cookieStrs []string
+	for _, cookies := range allCookies {
+		for _, cookie := range cookies {
+			cookieStrs = append(cookieStrs, cookie.Name+"="+cookie.Value)
+		}
 	}
-	randomBuild := builds[rand.Intn(len(builds))]
-
-	randomBuildInstance := TLSBuilds[randomBuild]
-
-	return TLSBuild{
-		JA3:       randomBuildInstance["ja3"],
-		UserAgent: randomBuildInstance["user-agent"],
-		Version:   randomBuildInstance["version"],
-	}
+	return strings.Join(cookieStrs, "; ")
 }

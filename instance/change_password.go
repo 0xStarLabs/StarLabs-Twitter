@@ -1,11 +1,10 @@
 package instance
 
 import (
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"github.com/Danny-Dasilva/CycleTLS/cycletls"
-	http "github.com/Danny-Dasilva/fhttp"
+	http "github.com/bogdanfinn/fhttp"
+
 	"io"
 	"strings"
 	"twitter/extra"
@@ -72,21 +71,8 @@ func (twitter *Twitter) ChangePassword(oldPassword string, newPassword string) s
 			continue
 		}
 		defer resp.Body.Close()
-
-		var reader io.ReadCloser
-		switch resp.Header.Get("Content-Encoding") {
-		case "gzip":
-			reader, err = gzip.NewReader(resp.Body)
-			if err != nil {
-				extra.Logger{}.Error("%d | Failed to create gzip reader while change password: %s", err.Error())
-				continue
-			}
-			defer reader.Close()
-		default:
-			reader = resp.Body
-		}
-
-		bodyBytes, err := io.ReadAll(reader)
+		
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			extra.Logger{}.Error("%d | Failed to read change password response body: %s", err.Error())
 			continue
@@ -95,7 +81,7 @@ func (twitter *Twitter) ChangePassword(oldPassword string, newPassword string) s
 		bodyString := string(bodyBytes)
 
 		for _, httpCookie := range resp.Cookies() {
-			newCookie := cycletls.Cookie{
+			newCookie := http.Cookie{
 				Name:  httpCookie.Name,
 				Value: httpCookie.Value,
 			}

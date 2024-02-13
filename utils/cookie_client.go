@@ -1,17 +1,16 @@
 package utils
 
 import (
-	"github.com/Danny-Dasilva/CycleTLS/cycletls"
-	http "github.com/Danny-Dasilva/fhttp"
+	http "github.com/bogdanfinn/fhttp"
 	"strings"
 )
 
 type CookieClient struct {
-	Cookies []cycletls.Cookie
+	Cookies []http.Cookie
 }
 
 func NewCookieClient() *CookieClient {
-	return &CookieClient{Cookies: []cycletls.Cookie{}}
+	return &CookieClient{Cookies: []http.Cookie{}}
 }
 
 func (jar *CookieClient) GetCookieValue(name string) (string, bool) {
@@ -23,7 +22,7 @@ func (jar *CookieClient) GetCookieValue(name string) (string, bool) {
 	return "", false
 }
 
-func (jar *CookieClient) AddCookies(cookies []cycletls.Cookie) {
+func (jar *CookieClient) AddCookies(cookies []http.Cookie) {
 	for _, cookie := range cookies {
 		jar.Cookies = append(jar.Cookies, cookie)
 	}
@@ -32,7 +31,7 @@ func (jar *CookieClient) AddCookies(cookies []cycletls.Cookie) {
 func (jar *CookieClient) SetCookieFromResponse(resp *http.Response) {
 	for _, httpCookie := range resp.Cookies() {
 		updated := false
-		newCookie := cycletls.Cookie{
+		newCookie := http.Cookie{
 			Name:  httpCookie.Name,
 			Value: httpCookie.Value,
 		}
@@ -54,7 +53,7 @@ func (jar *CookieClient) SetCookieFromResponse(resp *http.Response) {
 		}
 
 		if httpCookie.HttpOnly {
-			newCookie.HTTPOnly = httpCookie.HttpOnly
+			newCookie.HttpOnly = httpCookie.HttpOnly
 		}
 
 		if !httpCookie.Expires.IsZero() {

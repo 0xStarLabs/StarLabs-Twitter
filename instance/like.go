@@ -1,10 +1,10 @@
 package instance
 
 import (
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	http "github.com/Danny-Dasilva/fhttp"
+	http "github.com/bogdanfinn/fhttp"
+
 	"io"
 	"strings"
 	"twitter/extra"
@@ -72,20 +72,7 @@ func (twitter *Twitter) Like(tweetLink string) bool {
 		}
 		defer resp.Body.Close()
 
-		var reader io.ReadCloser
-		switch resp.Header.Get("Content-Encoding") {
-		case "gzip":
-			reader, err = gzip.NewReader(resp.Body)
-			if err != nil {
-				extra.Logger{}.Error("Failed to create gzip reader while like: %s", err.Error())
-				continue
-			}
-			defer reader.Close()
-		default:
-			reader = resp.Body
-		}
-
-		bodyBytes, err := io.ReadAll(reader)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			extra.Logger{}.Error("Failed to read like response body: %s", err.Error())
 			continue

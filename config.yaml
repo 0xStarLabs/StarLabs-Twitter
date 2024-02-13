@@ -2,7 +2,7 @@ info:
   # https://2captcha.com/
   2captcha_api_key: ""
   
-  max_tasks_retries: 1
+  max_tasks_retries: 3
   pause_between_tasks: "1-3"
   pause_between_accounts: "1-3"
   

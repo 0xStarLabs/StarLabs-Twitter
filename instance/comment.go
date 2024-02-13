@@ -1,10 +1,10 @@
 package instance
 
 import (
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	http "github.com/Danny-Dasilva/fhttp"
+	http "github.com/bogdanfinn/fhttp"
+
 	"io"
 	"strings"
 	"twitter/extra"
@@ -74,20 +74,7 @@ func (twitter *Twitter) Comment(tweetContent string, tweetLink string) bool {
 		}
 		defer resp.Body.Close()
 
-		var reader io.ReadCloser
-		switch resp.Header.Get("Content-Encoding") {
-		case "gzip":
-			reader, err = gzip.NewReader(resp.Body)
-			if err != nil {
-				extra.Logger{}.Error("Failed to create gzip reader while comment: %s", err.Error())
-				continue
-			}
-			defer reader.Close()
-		default:
-			reader = resp.Body
-		}
-
-		bodyBytes, err := io.ReadAll(reader)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			extra.Logger{}.Error("Failed to read comment response body: %s", err.Error())
 			continue
@@ -201,20 +188,7 @@ func (twitter *Twitter) CommentWithPicture(tweetContent string, tweetLink string
 		}
 		defer resp.Body.Close()
 
-		var reader io.ReadCloser
-		switch resp.Header.Get("Content-Encoding") {
-		case "gzip":
-			reader, err = gzip.NewReader(resp.Body)
-			if err != nil {
-				extra.Logger{}.Error("Failed to create gzip reader while comment with picture: %s", err.Error())
-				continue
-			}
-			defer reader.Close()
-		default:
-			reader = resp.Body
-		}
-
-		bodyBytes, err := io.ReadAll(reader)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			extra.Logger{}.Error("Failed to read comment with picture response body: %s", err.Error())
 			continue

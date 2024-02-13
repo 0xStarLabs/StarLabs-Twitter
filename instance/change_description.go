@@ -1,10 +1,9 @@
 package instance
 
 import (
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	http "github.com/Danny-Dasilva/fhttp"
+	http "github.com/bogdanfinn/fhttp"
 	"io"
 	"strings"
 	"twitter/extra"
@@ -66,20 +65,7 @@ func (twitter *Twitter) ChangeDescription(newDescription string) bool {
 		}
 		defer resp.Body.Close()
 
-		var reader io.ReadCloser
-		switch resp.Header.Get("Content-Encoding") {
-		case "gzip":
-			reader, err = gzip.NewReader(resp.Body)
-			if err != nil {
-				extra.Logger{}.Error("%d | Failed to create gzip reader while change description: %s", twitter.index, err.Error())
-				continue
-			}
-			defer reader.Close()
-		default:
-			reader = resp.Body
-		}
-
-		bodyBytes, err := io.ReadAll(reader)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			extra.Logger{}.Error("%d | Failed to read change description response body: %s", twitter.index, err.Error())
 			continue

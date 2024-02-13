@@ -51,4 +51,5 @@ var MainMenu = []string{
 	"Check if account is valid",
 	//"Unfreeze Accounts",
 	"Mutual Subscription",
+	"Vote in the poll",
 }

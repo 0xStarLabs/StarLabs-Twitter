@@ -4,7 +4,8 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	http "github.com/Danny-Dasilva/fhttp"
+	http "github.com/bogdanfinn/fhttp"
+
 	"io"
 	"net/url"
 	"strings"
@@ -70,20 +71,7 @@ func (twitter *Twitter) Tweet(tweetContent string) bool {
 		}
 		defer resp.Body.Close()
 
-		var reader io.ReadCloser
-		switch resp.Header.Get("Content-Encoding") {
-		case "gzip":
-			reader, err = gzip.NewReader(resp.Body)
-			if err != nil {
-				extra.Logger{}.Error("Failed to create gzip reader while tweet: %s", err.Error())
-				continue
-			}
-			defer reader.Close()
-		default:
-			reader = resp.Body
-		}
-
-		bodyBytes, err := io.ReadAll(reader)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			extra.Logger{}.Error("Failed to read tweet response body: %s", err.Error())
 			continue
@@ -193,20 +181,7 @@ func (twitter *Twitter) TweetWithPicture(tweetContent string, pictureBase64Encod
 		}
 		defer resp.Body.Close()
 
-		var reader io.ReadCloser
-		switch resp.Header.Get("Content-Encoding") {
-		case "gzip":
-			reader, err = gzip.NewReader(resp.Body)
-			if err != nil {
-				extra.Logger{}.Error("Failed to create gzip reader while with picture: %s", err.Error())
-				continue
-			}
-			defer reader.Close()
-		default:
-			reader = resp.Body
-		}
-
-		bodyBytes, err := io.ReadAll(reader)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			extra.Logger{}.Error("Failed to read with picture response body: %s", err.Error())
 			continue
@@ -301,20 +276,7 @@ func (twitter *Twitter) TweetQuote(tweetContent string, tweetLink string) bool {
 		}
 		defer resp.Body.Close()
 
-		var reader io.ReadCloser
-		switch resp.Header.Get("Content-Encoding") {
-		case "gzip":
-			reader, err = gzip.NewReader(resp.Body)
-			if err != nil {
-				extra.Logger{}.Error("Failed to create gzip reader while quote tweet: %s", err.Error())
-				continue
-			}
-			defer reader.Close()
-		default:
-			reader = resp.Body
-		}
-
-		bodyBytes, err := io.ReadAll(reader)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			extra.Logger{}.Error("Failed to read quote tweet response body: %s", err.Error())
 			continue

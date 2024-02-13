@@ -1,10 +1,8 @@
 package grabber
 
 import (
-	"compress/gzip"
 	"encoding/json"
-	"github.com/Danny-Dasilva/CycleTLS/cycletls"
-	http "github.com/Danny-Dasilva/fhttp"
+	http "github.com/bogdanfinn/fhttp"
 	"io"
 )
 
@@ -108,20 +106,7 @@ func (grabber *Grabber) activateGuestToken() bool {
 
 		defer resp.Body.Close()
 
-		var reader io.ReadCloser
-		switch resp.Header.Get("Content-Encoding") {
-		case "gzip":
-			reader, err = gzip.NewReader(resp.Body)
-			if err != nil {
-				grabber.logger.Error("%d | Failed to create gzip reader while guest token grabber: %s", grabber.index, err.Error())
-				continue
-			}
-			defer reader.Close()
-		default:
-			reader = resp.Body
-		}
-
-		bodyBytes, err := io.ReadAll(reader)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			grabber.logger.Error("%d | Failed to read check guest token response body: %s", grabber.index, err.Error())
 			continue
@@ -134,7 +119,7 @@ func (grabber *Grabber) activateGuestToken() bool {
 			continue
 		}
 		grabber.guestToken = guestToken.GuestToken
-		gtCookie := cycletls.Cookie{
+		gtCookie := http.Cookie{
 			Name:  "gt",
 			Value: grabber.guestToken,
 		}
