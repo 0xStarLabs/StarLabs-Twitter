@@ -1,7 +1,6 @@
 package instance
 
 import (
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	http "github.com/bogdanfinn/fhttp"
@@ -346,21 +345,7 @@ func (twitter *Twitter) UploadImageToTwitter(pictureBase64Encoded string) string
 	}
 	defer resp.Body.Close()
 
-	var newReader io.Reader
-
-	if resp.Header.Get("Content-Encoding") == "gzip" {
-		gzipReader, err := gzip.NewReader(resp.Body)
-		if err != nil {
-			extra.Logger{}.Error("%d | Failed to gzip upload media response: %s", twitter.index, err.Error())
-			return ""
-		}
-		defer gzipReader.Close()
-		newReader = gzipReader
-	} else {
-		newReader = resp.Body
-	}
-
-	body, err := io.ReadAll(newReader)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		extra.Logger{}.Error("%d | Failed to read media upload response body: %s", twitter.index, err.Error())
 		return ""
