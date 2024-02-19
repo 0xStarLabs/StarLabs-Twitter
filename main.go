@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 	"twitter/extra"
+	"twitter/grabber"
 	"twitter/instance"
 	"twitter/utils"
 )
@@ -182,18 +183,23 @@ func Process(index int, twitterAccount string, proxy string, config extra.Config
 	} else if strings.Contains(twitterAccount, ":") && len(strings.Split(twitterAccount, ":")) >= 3 && len(strings.Split(twitterAccount, ":")[2]) == 40 {
 		// login:pass:auth_token:json_cookies
 		twitterAccount = strings.Split(twitterAccount, ":")[2]
-		//} else if strings.Contains(twitterAccount, ":") && len(strings.Split(twitterAccount, ":")) == 2 {
-		//	// login:pass
-		//	parts := strings.Split(twitterAccount, ":")
-		//	login := parts[0]
-		//	password := parts[1]
-		//	grabberInstance := grabber.Grabber{}
-		//	ok := grabberInstance.InitGrabber(index, login, password, proxy, config, queryIDs)
-		//	if ok == false {
-		//		return
-		//	}
-		//	grabberInstance.GrabTheCookie()
-		//	return
+	} else if strings.Contains(twitterAccount, ":") && len(strings.Split(twitterAccount, ":")) == 2 {
+		// login:pass
+		parts := strings.Split(twitterAccount, ":")
+		login := parts[0]
+		password := parts[1]
+		grabberInstance := grabber.Grabber{}
+		ok := grabberInstance.InitGrabber(index, login, password, proxy, config, queryIDs)
+		if ok == false {
+			return
+		}
+		authToken := grabberInstance.GrabTheCookie()
+		err := extra.ReplaceLineInFile("data/accounts.txt", twitterAccount, twitterAccount+":"+authToken)
+		if err != nil {
+			return
+		}
+		twitterAccount = authToken
+		return
 	} else {
 		extra.Logger{}.Error("%d | Wrong account format.", index+1)
 		return

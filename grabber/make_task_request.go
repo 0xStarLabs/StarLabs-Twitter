@@ -68,6 +68,7 @@ func (grabber *Grabber) MakeTaskRequest(params string, jsonData string) bool {
 		}
 
 		bodyString := string(bodyBytes)
+		//fmt.Println(bodyString)
 
 		if strings.Contains(bodyString, "flow_token") && resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 			var task MakeTaskResponse
@@ -80,10 +81,10 @@ func (grabber *Grabber) MakeTaskRequest(params string, jsonData string) bool {
 				grabber.logger.Warning("%d | Account requires two-factor authentication.")
 				return false
 			}
-			if strings.Contains(bodyString, "AccountDuplicationCheck") || strings.Contains(bodyString, "AccountDuplicationCheck_true") {
-				grabber.logger.Warning("%d | Account requires duplication check.", grabber.index)
-				return false
-			}
+			//if strings.Contains(bodyString, "AccountDuplicationCheck") || strings.Contains(bodyString, "AccountDuplicationCheck_true") {
+			//	grabber.logger.Warning("%d | Account requires duplication check.", grabber.index)
+			//	return false
+			//}
 			grabber.flowToken = task.FlowToken
 			return true
 

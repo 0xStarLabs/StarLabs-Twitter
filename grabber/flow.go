@@ -35,7 +35,16 @@ func (grabber *Grabber) Flow() bool {
 	if ok == false {
 		return false
 	}
-	return true
+
+	authToken, _ := grabber.cookies.GetCookieValue("auth_token")
+	if authToken == "" {
+		grabber.logger.Error("%d | Failed to grab the cookie for unknown reason.", grabber.index)
+		return false
+	} else {
+		grabber.logger.Success("%d | Successfully grabbed new auth token!", grabber.index)
+		grabber.authToken = authToken
+		return true
+	}
 }
 
 func (grabber *Grabber) initRequest() bool {
