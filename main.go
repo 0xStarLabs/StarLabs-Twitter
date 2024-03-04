@@ -74,6 +74,7 @@ func options() {
 	failedAccounts := make(chan string, len(accounts))
 	lockedAccounts := make(chan string, len(accounts))
 	usernames := make(chan string, len(accounts))
+	creationDateChan := make(chan string, len(accounts))
 	indexes := make(chan int, len(accounts))
 	// save all accounts usernames to map for mutual subscription function
 	// every account has 0 subs by default
@@ -114,6 +115,7 @@ func options() {
 				LockedAccounts:      lockedAccounts,
 				Usernames:           usernames,
 				MutualSubsUsernames: &mutualSubsUsernames,
+				CreationDateChan:    creationDateChan,
 			}
 			goroutines.Wait()
 			go func(i int) {
@@ -125,7 +127,7 @@ func options() {
 		for i := start; i < end && i < len(accounts); i++ {
 			goroutines.Wait()
 			go func(i int) {
-				Process(i, accounts[i], proxies[i], config, userChoice, tasks, txtData, queryIDs, failedAccounts, lockedAccounts, usernames, &mutualSubsUsernames)
+				Process(i, accounts[i], proxies[i], config, userChoice, tasks, txtData, queryIDs, failedAccounts, lockedAccounts, usernames, &mutualSubsUsernames, creationDateChan)
 				goroutines.Done()
 				extra.RandomSleep(config.Info.PauseBetweenAccounts.Start, config.Info.PauseBetweenAccounts.End)
 			}(i)
@@ -135,6 +137,7 @@ func options() {
 	close(failedAccounts)
 	close(lockedAccounts)
 	close(usernames)
+	close(creationDateChan)
 	failedAccountsSet := make(map[string]struct{})
 	lockedAccountsSet := make(map[string]struct{})
 
@@ -163,6 +166,7 @@ func options() {
 
 	if slices.Contains(userChoice, "Check if account is valid") {
 		extra.RewriteChannelToFile("data/my_usernames.txt", usernames)
+		extra.RewriteChannelToFile("data/creation_date.txt", creationDateChan)
 	}
 	// show statistic
 	fmt.Println()
@@ -175,7 +179,7 @@ func options() {
 	}
 }
 
-func Process(index int, twitterAccount string, proxy string, config extra.Config, userChoice []string, tasks extra.TasksTargetInfo, txtData extra.TxtTasksData, queryIDs extra.QueryIDs, failedAccounts chan<- string, lockedAccounts chan<- string, usernames chan<- string, mutualSubsUsernames *sync.Map) {
+func Process(index int, twitterAccount string, proxy string, config extra.Config, userChoice []string, tasks extra.TasksTargetInfo, txtData extra.TxtTasksData, queryIDs extra.QueryIDs, failedAccounts chan<- string, lockedAccounts chan<- string, usernames chan<- string, mutualSubsUsernames *sync.Map, creationDateChan chan<- string) {
 	var report bool
 
 	if len(twitterAccount) == 40 && !strings.Contains(twitterAccount, ":") {
@@ -377,7 +381,14 @@ func Process(index int, twitterAccount string, proxy string, config extra.Config
 	}
 	if slices.Contains(userChoice, "Check if account is valid") {
 		var username string
-		ok, username = twitter.CheckSuspended()
+		creationDate := ""
+		ok, username, creationDate = twitter.CheckSuspended()
+		dateToWrite := fmt.Sprintf("%s:%s", username, creationDate)
+
+		if username != "" {
+			creationDateChan <- dateToWrite
+		}
+
 		if ok == false {
 			report = true
 		} else {
@@ -429,7 +440,7 @@ func Process(index int, twitterAccount string, proxy string, config extra.Config
 
 func MobileProxyWrapper(data MobileProxyData) {
 	for i := range data.Indexes {
-		Process(i, data.Accounts[i], data.Proxy, data.Config, data.UserChoice, data.Tasks, data.TxtData, data.QueryIDs, data.FailedAccounts, data.LockedAccounts, data.Usernames, data.MutualSubsUsernames)
+		Process(i, data.Accounts[i], data.Proxy, data.Config, data.UserChoice, data.Tasks, data.TxtData, data.QueryIDs, data.FailedAccounts, data.LockedAccounts, data.Usernames, data.MutualSubsUsernames, data.CreationDateChan)
 		extra.RandomSleep(data.Config.Info.PauseBetweenAccounts.Start, data.Config.Info.PauseBetweenAccounts.End)
 
 		extra.ChangeProxyURL(data.IPChangeLink)
@@ -453,4 +464,5 @@ type MobileProxyData struct {
 	LockedAccounts      chan string
 	Usernames           chan string
 	MutualSubsUsernames *sync.Map
+	CreationDateChan    chan string
 }

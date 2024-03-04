@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	http "github.com/bogdanfinn/fhttp"
+	"time"
 
 	"io"
 	"strings"
@@ -11,7 +12,8 @@ import (
 )
 
 // CheckSuspended check if account is suspended
-func (twitter *Twitter) CheckSuspended() (bool, string) {
+func (twitter *Twitter) CheckSuspended() (bool, string, string) {
+	var creationDate string
 	checkSuspendedURL := fmt.Sprintf("https://api.twitter.com/1.1/users/lookup.json?screen_name=%s", twitter.Username)
 
 	for i := 0; i < twitter.config.Info.MaxTasksRetries; i++ {
@@ -78,25 +80,33 @@ func (twitter *Twitter) CheckSuspended() (bool, string) {
 				extra.Logger{}.Error("%d | Failed to do unmarshal in check valid response: %s", twitter.index, err.Error())
 				continue
 			}
+			creationDate = responseValid[0].CreatedAt
+			layout := "Mon Jan 02 15:04:05 -0700 2006"
+			creationDateStr, err := time.Parse(layout, creationDate)
+			creationDate = creationDateStr.Format("01/2006")
+			if err != nil {
+				twitter.logger.Error("%d | Error parsing account creation date: ", twitter.index, err)
+				return false, "", creationDate
+			}
 
 			if responseValid[0].Suspended {
-				twitter.logger.Warning("%d | %s | Account is suspended.", twitter.index, twitter.Username)
-				return false, ""
+				twitter.logger.Warning("%d | %s | Account is suspended. Created at %s", twitter.index, twitter.Username, creationDate)
+				return false, "", creationDate
 			} else {
-				twitter.logger.Success("%d | %s | Account is not suspended.", twitter.index, twitter.Username)
-				return true, twitter.Username
+				twitter.logger.Success("%d | %s | Account is not suspended. Created at %s", twitter.index, twitter.Username, creationDate)
+				return true, twitter.Username, creationDate
 			}
 
 		} else if strings.Contains(bodyString, "this account is temporarily locked") {
 			extra.Logger{}.Error("%d | Account is temporarily locked", twitter.index)
-			return false, ""
+			return false, "", creationDate
 
 		} else if strings.Contains(bodyString, "Could not authenticate you") {
 			extra.Logger{}.Error("%d | Could not authenticate you", twitter.index)
-			return false, ""
+			return false, "", creationDate
 		} else if strings.Contains(bodyString, "User has been suspended") {
 			extra.Logger{}.Error("%d | Account is suspended", twitter.index)
-			return false, ""
+			return false, "", creationDate
 		} else {
 			extra.Logger{}.Error("%d | Unknown response while check suspended: %s", twitter.index, bodyString)
 			continue
@@ -104,7 +114,7 @@ func (twitter *Twitter) CheckSuspended() (bool, string) {
 	}
 
 	extra.Logger{}.Error("%d | %s | Unable to check if account is suspended", twitter.index, twitter.Username)
-	return false, ""
+	return false, "", creationDate
 }
 
 type GetValidUserResponse []struct {
