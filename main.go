@@ -184,6 +184,9 @@ func Process(index int, twitterAccount string, proxy string, config extra.Config
 
 	if len(twitterAccount) == 40 && !strings.Contains(twitterAccount, ":") {
 		// auth_token
+	} else if strings.Contains(twitterAccount, ":") && len(strings.Split(twitterAccount, ":")) == 3 {
+		// login:pass:auth_token
+		twitterAccount = strings.Split(twitterAccount, ":")[2]
 	} else if strings.Contains(twitterAccount, ":") && len(strings.Split(twitterAccount, ":")) >= 3 && len(strings.Split(twitterAccount, ":")[2]) == 40 {
 		// login:pass:auth_token:json_cookies
 		twitterAccount = strings.Split(twitterAccount, ":")[2]
