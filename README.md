@@ -43,17 +43,19 @@ go mod tidy
 go run main.go
 ```
 
-## 📁 Project Structure
+## �� Project Structure
+```
 StarLabs-Twitter/
 ├── data/
-│ ├── accounts.xlsx # Twitter accounts data
-│ ├── config.yaml # Configuration settings
-│ ├── comment_text.txt # Comments for interactions
-│ ├── tweet_text.txt # Tweets content
-│ └── images/ # Images for media tweets (jpg or png)
+│   ├── accounts.xlsx        # Twitter accounts data
+│   ├── config.yaml          # Configuration settings
+│   ├── comment_text.txt     # Comments for interactions
+│   ├── tweet_text.txt       # Tweets content
+│   └── images/             # Images for media tweets (jpg or png)
 └── src/
-├── model/ # Core business logic
-└── utils/ # Utility functions
+    ├── model/              # Core business logic
+    └── utils/              # Utility functions
+```
 
 ## 📝 Configuration
 
