@@ -1,0 +1,24 @@
+SETTINGS:
+  # Number of threads to use
+  THREADS: 5
+
+  # Number of retries for each function
+  RETRIES: 3
+
+  # Pause between retries in seconds
+  PAUSE_BETWEEN_RETRIES: [1, 3]
+
+  # Pause between accounts in seconds
+  PAUSE_BETWEEN_ACCOUNTS: [1, 3]
+
+  # Account range. 
+  # BY DEFAULT: [0, 0] - all accounts
+  # [3, 5] - only 3 4 5 accounts
+  # [7, 7] - only 7 account
+  ACCOUNTS_RANGE: [0, 0]
+
+
+MUTUAL_SUBSCRIPTION:
+  # Random number of followers for every account
+  # Example: [3, 5] - every account will have between 3 and 5 MORE (!) followers at the end
+  FOLLOWERS_FOR_EVERY_ACCOUNT: [1, 2]
