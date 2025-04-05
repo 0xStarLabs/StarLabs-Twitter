@@ -1,0 +1,70 @@
+# --------------------------- #
+# SETTINGS SECTION
+# --------------------------- #
+SETTINGS:
+    # number of concurrent threads
+    THREADS: 1
+
+    # number of retries for ANY action
+    ATTEMPTS: 5
+    
+    # account range.
+    # BY DEFAULT: [0, 0] - all accounts
+    # [3, 5] - only 3 4 5 accounts
+    # [7, 7] - only 7 account
+    ACCOUNTS_RANGE: [0, 0]
+    
+    # WORKS ONLY IF ACCOUNTS_RANGE IS [0, 0]
+    # exact accounts to use.
+    # BY DEFAULT: [] - all accounts
+    # Example: [1, 4, 6] - bot will use only 1, 4 and 6 accounts
+    EXACT_ACCOUNTS_TO_USE: []
+    
+    SHUFFLE_ACCOUNTS: true
+
+    # pause between attempts
+    PAUSE_BETWEEN_ATTEMPTS: [3, 10]
+    
+    # pause in seconds between accounts
+    RANDOM_PAUSE_BETWEEN_ACCOUNTS: [3, 10]
+    
+    # pause in seconds between actions
+    RANDOM_PAUSE_BETWEEN_ACTIONS: [3, 10]
+    
+    # random pause before start of every account
+    # to make sure that all accounts will be started at different times
+    RANDOM_INITIALIZATION_PAUSE: [3, 10]
+    
+    # if true, bot will send logs to telegram
+    SEND_TELEGRAM_LOGS: false
+    # if true, bot will send ONLY summary to telegram. no logs for each account.
+    SEND_ONLY_SUMMARY: false
+    # telegram bot token
+    TELEGRAM_BOT_TOKEN: "2315234123:JLkajhsdKJAHuwihadjkhsAJKd"
+    # telegram users ids
+    TELEGRAM_USERS_IDS: [1251234334]
+
+
+FLOW:
+    # if task from database failed, bot will skip it
+    # if false, bot will stop and show error
+    SKIP_FAILED_TASKS: false
+
+
+TWEETS:
+    # if true, bot will use tweet text from file in RANDOM ORDER
+    RANDOM_TEXT_FOR_TWEETS: false
+
+    # if true, bot will use picture from file in RANDOM ORDER
+    RANDOM_PICTURE_FOR_TWEETS: true
+
+
+COMMENTS:
+    # if true, bot will use comment text from file in RANDOM ORDER
+    RANDOM_TEXT_FOR_COMMENTS: false
+
+    # if true, bot will use picture from file in RANDOM ORDER
+    RANDOM_PICTURE_FOR_COMMENTS: true
+
+OTHERS:
+    SSL_VERIFICATION: false
