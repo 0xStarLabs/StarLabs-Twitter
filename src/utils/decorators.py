@@ -21,6 +21,7 @@ T = TypeVar("T")
 # async def some_function():
 #     ...
 
+
 def retry_async(
     attempts: int = None,  # Make attempts optional
     delay: float = 1.0,
@@ -31,17 +32,53 @@ def retry_async(
     Async retry decorator with exponential backoff.
     If attempts is not provided, uses SETTINGS.ATTEMPTS from config.
     """
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         async def wrapper(*args, **kwargs):
             # Get attempts from config if not provided
-            retry_attempts = attempts if attempts is not None else get_config().SETTINGS.ATTEMPTS
+            retry_attempts = (
+                attempts if attempts is not None else get_config().SETTINGS.ATTEMPTS
+            )
             current_delay = delay
 
             for attempt in range(retry_attempts):
                 try:
                     return await func(*args, **kwargs)
                 except Exception as e:
+                    # Check if this is a fatal Twitter error that shouldn't retry
+                    error_str = str(e).lower()
+                    if any(
+                        x in error_str
+                        for x in [
+                            "account is temporarily locked",
+                            "could not authenticate you",
+                            "to protect our users from spam",
+                            "account has been suspended",
+                        ]
+                    ):
+                        logger.error(
+                            f"Fatal Twitter error for {func.__name__}: {str(e)}. Not retrying."
+                        )
+
+                        # For Twitter client, try to update the account status
+                        if args and hasattr(args[0], "account_status"):
+                            if "account is temporarily locked" in error_str:
+                                args[0].account_status = "locked"
+                            elif "could not authenticate you" in error_str:
+                                args[0].account_status = "wrong_token"
+                            elif (
+                                "to protect our users from spam" in error_str
+                                or "account has been suspended" in error_str
+                            ):
+                                args[0].account_status = "suspended"
+                            else:
+                                args[0].account_status = "unknown"
+
+                        # Return default value instead of retrying
+                        return default_value
+
+                    # Regular retry logic for other errors
                     if attempt < retry_attempts - 1:  # Don't sleep on the last attempt
                         logger.warning(
                             f"Attempt {attempt + 1}/{retry_attempts} failed for {func.__name__}: {str(e)}. "
@@ -53,6 +90,18 @@ def retry_async(
                         logger.error(
                             f"All {retry_attempts} attempts failed for {func.__name__}: {str(e)}"
                         )
+
+                        # Don't re-raise for initialize function in mutual subscription context
+                        # to prevent crashing the entire process
+                        if (
+                            func.__name__ == "initialize"
+                            and "mutual_subscription" in str(kwargs.get("context", ""))
+                        ):
+                            logger.error(
+                                f"Not raising exception for {func.__name__} in mutual subscription context"
+                            )
+                            return default_value
+
                         raise e  # Re-raise the last exception
 
             return default_value

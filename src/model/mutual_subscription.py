@@ -87,15 +87,24 @@ async def execute_mutual_subscription(
 
     # Filter accounts that were successfully initialized - parallelize this step
     async def initialize_account(account):
-        result = await account.initialize()
-        if result:
+        try:
+            result = await account.initialize()
+            if result:
+                # Update progress tracker if provided
+                if progress_tracker:
+                    await progress_tracker.increment(1)
+                return account
+            if progress_tracker:
+                await progress_tracker.increment(1)
+            return None
+        except Exception as e:
+            # Handle authentication errors, blocks, etc. gracefully
+            logger.error(f"Failed to initialize account {account.account_index}: {e}")
             # Update progress tracker if provided
             if progress_tracker:
                 await progress_tracker.increment(1)
-            return account
-        if progress_tracker:
-            await progress_tracker.increment(1)
-        return None
+            # Return None for failed accounts
+            return None
 
     # Use a semaphore to limit concurrency
     thread_count = config.SETTINGS.THREADS
@@ -108,10 +117,20 @@ async def execute_mutual_subscription(
     # Initialize accounts in parallel
     logger.info(f"Initializing accounts using {thread_count} threads")
     initialization_tasks = [bounded_initialize(account) for account in accounts]
-    initialized_results = await asyncio.gather(*initialization_tasks)
 
-    # Filter out None results
-    initialized_accounts = [acc for acc in initialized_results if acc is not None]
+    # Use gather with return_exceptions=True to prevent exceptions from propagating
+    initialized_results = await asyncio.gather(
+        *initialization_tasks, return_exceptions=True
+    )
+
+    # Filter out None results and exceptions
+    initialized_accounts = []
+    for result in initialized_results:
+        if isinstance(result, Exception):
+            logger.error(f"Account initialization task failed with error: {result}")
+            continue
+        if result is not None:
+            initialized_accounts.append(result)
 
     logger.info(
         f"Successfully initialized {len(initialized_accounts)}/{len(accounts)} accounts"
@@ -143,10 +162,19 @@ async def execute_mutual_subscription(
 
     # Execute the subscription plan - also parallelize this step using the semaphore
     async def bounded_process_subscription(account, usernames_to_follow):
-        async with semaphore:
-            await process_account_subscription(
-                account, usernames_to_follow, config, stats, progress_tracker
+        try:
+            async with semaphore:
+                await process_account_subscription(
+                    account, usernames_to_follow, config, stats, progress_tracker
+                )
+        except Exception as e:
+            logger.error(
+                f"Error during subscription process for account {account.username}: {e}"
             )
+            stats["processed"] += 1
+            stats["failed"] += 1
+            if progress_tracker:
+                await progress_tracker.increment(1)
 
     tasks = []
     for account in initialized_accounts:
@@ -168,9 +196,9 @@ async def execute_mutual_subscription(
             if progress_tracker:
                 await progress_tracker.increment(1)
 
-    # Wait for all tasks to complete
+    # Wait for all tasks to complete, handling exceptions
     if tasks:
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks, return_exceptions=True)
 
     # Calculate elapsed time
     elapsed_time = time.time() - start_time
@@ -208,16 +236,34 @@ async def process_account_subscription(
         # we'll follow them one by one with random delays in between
         all_success = True
         for username in usernames_to_follow:
-            # Follow a single user
-            success = await account.twitter.follow(username)
+            try:
+                # Follow a single user
+                success = await account.twitter.follow(username)
 
-            if success:
-                logger.success(
-                    f"Account {account.username} successfully followed {username}"
+                if success:
+                    logger.success(
+                        f"Account {account.username} successfully followed {username}"
+                    )
+                else:
+                    logger.error(
+                        f"Account {account.username} failed to follow {username}"
+                    )
+                    all_success = False
+
+                # Check account status after follow - if account is locked or has other issues, break the loop
+                if account.twitter.account_status != "ok":
+                    logger.warning(
+                        f"Account {account.username} status changed to {account.twitter.account_status}, stopping follow operations"
+                    )
+                    all_success = False
+                    break
+
+            except Exception as e:
+                logger.error(
+                    f"Error while account {account.username} was following {username}: {e}"
                 )
-            else:
-                logger.error(f"Account {account.username} failed to follow {username}")
                 all_success = False
+                # Continue with next username rather than breaking completely
 
             # Add a random delay between follows within the same account
             # Use a smaller range than between accounts

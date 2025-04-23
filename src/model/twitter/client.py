@@ -25,14 +25,55 @@ class Twitter:
             self.session, self.csrf_token = await create_twitter_client(
                 self.proxy, self.auth_token, self.config.OTHERS.SSL_VERIFICATION
             )
-            self.username = await self.get_account_username()
-            if not self.username:
-                raise Exception("Failed to get username")
 
+            # Try to get username - this is where most auth failures occur
+            try:
+                self.username = await self.get_account_username()
+                if not self.username:
+                    self.account_status = "wrong_token"
+                    logger.error(
+                        f"[{self.account_index}] Failed to get username - invalid auth token"
+                    )
+                    return False
+            except Exception as username_error:
+                # Handle specific error cases from get_account_username
+                if "Could not authenticate you" in str(username_error):
+                    self.account_status = "wrong_token"
+                    logger.error(
+                        f"[{self.account_index}] Authentication failed: Invalid auth token"
+                    )
+                elif "account is temporarily locked" in str(username_error):
+                    self.account_status = "locked"
+                    logger.error(
+                        f"[{self.account_index}] Account is temporarily locked"
+                    )
+                elif "to protect our users from spam" in str(username_error):
+                    self.account_status = "suspended"
+                    logger.error(f"[{self.account_index}] Account is suspended")
+                else:
+                    self.account_status = "unknown"
+                    logger.error(
+                        f"[{self.account_index}] Failed to get username: {username_error}"
+                    )
+                return False
+
+            logger.success(
+                f"[{self.account_index}] Successfully initialized account: {self.username}"
+            )
             return True
+
         except Exception as e:
             logger.error(f"[{self.account_index}] Failed to initialize: {e}")
-            raise e
+            # Update account status even on general errors
+            if "Could not authenticate you" in str(e):
+                self.account_status = "wrong_token"
+            elif "account is temporarily locked" in str(e):
+                self.account_status = "locked"
+            elif "to protect our users from spam" in str(e):
+                self.account_status = "suspended"
+            else:
+                self.account_status = "unknown"
+            return False
 
     @retry_async(default_value=False)
     async def like(self, tweet_id: str):
