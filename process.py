@@ -14,6 +14,8 @@ from src.utils.logs import (
 from src.utils.config_browser import run
 from src.utils.reader import read_accounts_from_excel
 from src.utils.telegram_logger import send_telegram_message
+from src.model.mutual_subscription import execute_mutual_subscription
+from src.model.instance import Instance
 
 
 async def start():
@@ -28,20 +30,24 @@ async def start():
 
     print("\nAvailable options:\n")
     print("[1] ⭐️ Start farming")
-    print("[2] 🔧 Edit config")
-    print("[3] 👋 Exit")
+    print("[2] 🔄 Mutual Subscription")
+    print("[3] 🔧 Edit config")
+    print("[4] 👋 Exit")
     print()
 
     try:
-        choice = input("Enter option (1-3): ").strip()
+        choice = input("Enter option (1-4): ").strip()
     except Exception as e:
         logger.error(f"Input error: {e}")
         return
 
-    if choice == "3" or not choice:
+    if choice == "4" or not choice:
+        return
+    elif choice == "3":
+        run()
         return
     elif choice == "2":
-        run()
+        await run_mutual_subscription()
         return
     elif choice == "1":
         pass
@@ -203,7 +209,9 @@ async def start():
                 message += f"{i}. {task_name.capitalize()}: {success_count}/{total_for_task} ({success_rate:.1f}%)\n"
 
             message += f"\n⚙️ Settings:\n"
-            message += f"Skip Failed: {'Yes' if config.FLOW.SKIP_FAILED_TASKS else 'No'}\n"
+            message += (
+                f"Skip Failed: {'Yes' if config.FLOW.SKIP_FAILED_TASKS else 'No'}\n"
+            )
             message += f"Tasks: {', '.join(config.FLOW.TASKS)}\n"
 
             # Send the message
@@ -293,3 +301,143 @@ def task_exists_in_config(task_name: str, tasks_list: list) -> bool:
         elif task == task_name:
             return True
     return False
+
+
+async def run_mutual_subscription():
+    """
+    Run the mutual subscription feature.
+    """
+    config = src.utils.get_config()
+
+    # Read accounts from Excel
+    accounts_to_process = read_accounts_from_excel("data/accounts.xlsx")
+
+    if not accounts_to_process:
+        logger.error("No accounts found in Excel file. Please add accounts first.")
+        input("Press Enter to continue...")
+        return
+
+    # Print total number of accounts
+    print(f"\nTotal accounts available: {len(accounts_to_process)}")
+    print(f"Thread count configured: {config.SETTINGS.THREADS}")
+
+    # Get number of followers per account from user
+    try:
+        print("\nMutual Subscription Configuration:")
+        print("----------------------------------")
+        print("This will make Twitter accounts follow each other.")
+        print("Each account will follow a specified number of other accounts.")
+
+        followers_per_account = int(
+            input("\nEnter number of followers for each account: ").strip()
+        )
+        if followers_per_account <= 0:
+            logger.error("Number of followers must be greater than 0")
+            input("Press Enter to continue...")
+            return
+
+        # Warn if followers_per_account is greater than available accounts
+        if followers_per_account >= len(accounts_to_process):
+            print(
+                f"\nWARNING: You specified {followers_per_account} followers per account, but you only have {len(accounts_to_process)} accounts."
+            )
+            print(
+                "The maximum followers per account will be limited to the number of accounts minus one."
+            )
+            print(
+                "Each account can follow at most all other accounts (but not itself)."
+            )
+            confirm = input("\nDo you want to continue? (y/n): ").strip().lower()
+            if confirm != "y":
+                print("Operation cancelled.")
+                return
+    except ValueError:
+        logger.error("Please enter a valid number")
+        input("Press Enter to continue...")
+        return
+
+    # Determine accounts range (same logic as in start function)
+    start_index = config.SETTINGS.ACCOUNTS_RANGE[0]
+    end_index = config.SETTINGS.ACCOUNTS_RANGE[1]
+
+    if start_index == 0 and end_index == 0:
+        if config.SETTINGS.EXACT_ACCOUNTS_TO_USE:
+            valid_indices = [
+                i
+                for i in config.SETTINGS.EXACT_ACCOUNTS_TO_USE
+                if i <= len(accounts_to_process)
+            ]
+            selected_indices = [i - 1 for i in valid_indices]
+            final_accounts = [
+                accounts_to_process[i]
+                for i in selected_indices
+                if i < len(accounts_to_process)
+            ]
+            logger.info(f"Using specific accounts: {valid_indices}")
+
+            start_index = min(valid_indices) if valid_indices else 1
+            end_index = (
+                max(valid_indices) if valid_indices else len(accounts_to_process)
+            )
+        else:
+            final_accounts = accounts_to_process
+            start_index = 1
+            end_index = len(accounts_to_process)
+    else:
+        if start_index < 1:
+            start_index = 1
+        if end_index > len(accounts_to_process):
+            end_index = len(accounts_to_process)
+
+        final_accounts = accounts_to_process[start_index - 1 : end_index]
+
+    # Create instance list
+    instances = []
+    for i, account in enumerate(final_accounts):
+        account_index = start_index + i
+        prepare_data = None  # Not needed for mutual subscription
+        instance = Instance(account, config, account_index, prepare_data)
+        instances.append(instance)
+
+    # Show a summary before starting
+    print("\nMutual Subscription Summary:")
+    print(f"- Total accounts to process: {len(instances)}")
+    print(f"- Followers per account: {followers_per_account}")
+    print(f"- Using {config.SETTINGS.THREADS} parallel threads")
+    print(f"- Accounts range: {start_index} to {end_index}")
+
+    # Create a progress tracker to show real-time progress
+    progress_tracker = await create_progress_tracker(
+        total=len(instances), description="Accounts initialized"
+    )
+
+    print("\nStarting mutual subscription process...")
+
+    # Execute mutual subscription
+    logger.info(
+        f"Starting mutual subscription with {len(instances)} accounts and {followers_per_account} followers per account"
+    )
+    stats = await execute_mutual_subscription(
+        instances, config, followers_per_account, progress_tracker
+    )
+
+    # Log results
+    logger.success(f"Mutual subscription completed.")
+
+    # Print a summary table
+    print("\n=== Mutual Subscription Results ===")
+    print(f"Total accounts:       {stats['total']}")
+    print(f"Processed accounts:   {stats['processed']}")
+    print(f"Successful operations: {stats['success']}")
+    print(f"Failed operations:    {stats['failed']}")
+    print(
+        f"Success rate:         {(stats['success']/stats['total']*100) if stats['total'] > 0 else 0:.2f}%"
+    )
+    print("==================================")
+
+    logger.info(f"Total accounts: {stats['total']}")
+    logger.info(f"Processed accounts: {stats['processed']}")
+    logger.info(f"Successful operations: {stats['success']}")
+    logger.info(f"Failed operations: {stats['failed']}")
+
+    input("\nPress Enter to continue...")

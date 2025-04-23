@@ -334,7 +334,7 @@ class Twitter:
                 "referer": "https://twitter.com/compose/tweet",
                 "x-csrf-token": self.csrf_token,
             }
-        
+
             response = await self.session.post(
                 base_url,
                 headers=headers,
@@ -724,3 +724,37 @@ class Twitter:
         except Exception as e:
             logger.error(f"[{self.account_index}] Failed to update cookies: {e}")
             return False
+
+    @retry_async(default_value=False)
+    async def mutual_subscription(self, usernames: list[str]):
+        """
+        Follow a list of usernames.
+
+        Args:
+            usernames (list[str]): List of usernames to follow
+
+        Returns:
+            bool: True if all follows were successful, False otherwise
+        """
+        try:
+            if not usernames:
+                logger.warning(f"[{self.account_index}] No usernames to follow")
+                return True
+
+            success = True
+            for username in usernames:
+                result = await self.follow(username)
+                if not result:
+                    success = False
+                    logger.error(f"[{self.account_index}] Failed to follow {username}")
+                else:
+                    logger.success(
+                        f"[{self.account_index}] Successfully followed {username}"
+                    )
+
+            return success
+        except Exception as e:
+            logger.error(
+                f"[{self.account_index}] Failed to complete mutual subscription: {e}"
+            )
+            raise e

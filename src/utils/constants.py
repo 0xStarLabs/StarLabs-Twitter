@@ -10,12 +10,12 @@ class Account:
         return f"Account(auth_token={self.auth_token}, proxy={self.proxy})"
 
 
-
 @dataclass
 class DataForTasks:
     """
     Class for storing data for tasks
     """
+
     USERNAMES_TO_FOLLOW: list[str]
     USERNAMES_TO_UNFOLLOW: list[str]
     LINKS_TO_LIKE: list[str]
@@ -25,7 +25,6 @@ class DataForTasks:
     LINKS_FOR_COMMENTS: list[str]
     LINKS_FOR_QUOTES: list[str]
     COMMENTS: list[str]
-
 
 
 MAIN_MENU_OPTIONS = [
