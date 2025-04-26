@@ -1,3 +1,4 @@
+from datetime import datetime
 from loguru import logger
 from src.model.twitter.constants import Constants
 from src.utils.client import create_twitter_client
@@ -706,9 +707,32 @@ class Twitter:
                 .get("screen_name", None)
             )
 
+            created_at = (
+                response_json.get("data", {})
+                .get("viewer", {})
+                .get("user_results", {})
+                .get("result", {})
+                .get("legacy", {})
+                .get("created_at", None)
+            )
+
+            # Format the created_at date if it exists
+            formatted_created_at = None
+            if created_at:
+                try:
+                    # Parse Twitter's date format (e.g., "Tue Jan 21 20:58:28 +0000 2025")
+                    date_obj = datetime.strptime(created_at, "%a %b %d %H:%M:%S %z %Y")
+                    # Format to "DD/MM/YYYY HH:MM"
+                    formatted_created_at = date_obj.strftime("%d/%m/%Y %H:%M")
+
+                except Exception as e:
+                    logger.error(
+                        f"[{self.account_index}] Failed to parse creation date: {e}"
+                    )
+
             if username:
                 logger.success(
-                    f"[{self.account_index}] Successfully retrieved username: {username}"
+                    f"[{self.account_index}] Successfully retrieved username: {username} | Account created at: {formatted_created_at}"
                 )
                 return username
             else:
