@@ -161,7 +161,7 @@ class Twitter:
                 if not should_continue:
                     return False
 
-            if response.json()["screen_name"] == username:
+            if response.json()["screen_name"].lower() == username.lower():
                 logger.success(
                     f"[{self.account_index}] Successfully followed user: {username}"
                 )
