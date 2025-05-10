@@ -50,6 +50,9 @@ def parse_proxy_str(proxy: str) -> ParsedProxy:
     if not proxy:
         raise ValueError(f"Proxy cannot be an empty string")
 
+    # Trim whitespace from the proxy string
+    proxy = proxy.strip()
+
     for pattern in PROXY_FORMATS_REGEXP:
         match = pattern.match(proxy)
         if match:
