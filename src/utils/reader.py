@@ -48,13 +48,21 @@ def read_accounts_from_excel(
     # Lock the mutex before accessing the file
     with excel_mutex:
         try:
+            # Check if file exists
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"Excel file not found: {file_path}")
+
             # Read Excel file
             df = pd.read_excel(file_path)
+
+            # Check if required columns exist
+            if "AUTH_TOKEN" not in df.columns:
+                raise ValueError("Excel file must have an 'AUTH_TOKEN' column")
 
             accounts = []
 
             # Process rows until empty AUTH_TOKEN
-            for _, row in df.iterrows():
+            for index, row in df.iterrows():
                 # Skip rows with empty auth_token
                 if (
                     pd.isna(row.get("AUTH_TOKEN", ""))
@@ -77,15 +85,17 @@ def read_accounts_from_excel(
                         # Convert to user:pass@ip:port format
                         proxy_str = proxy_obj.get_default_format()
                     except Exception as e:
-                        raise Exception(
-                            f"Failed to parse proxy '{proxy_str}': {e}. Unable to continue. Exiting..."
+                        # Add row number to error message
+                        raise ValueError(
+                            f"Failed to parse proxy '{proxy_str}' on row {index + 2}: {str(e)}"
                         )
-                        
 
                 # Create account object
                 account = Account(auth_token=auth_token, proxy=proxy_str)
-
                 accounts.append(account)
+
+            if not accounts:
+                raise ValueError("No valid accounts found in the Excel file. Please check that the file has accounts with valid AUTH_TOKEN values.")
 
             # If both are 1 and 0 or equal, process all accounts
             if (start_index == 1 and end_index == 0) or start_index == end_index:
@@ -105,6 +115,9 @@ def read_accounts_from_excel(
             )
             return filtered_accounts
 
+        except pd.errors.EmptyDataError:
+            logger.error("The Excel file is empty")
+            return []
         except Exception as e:
             logger.error(f"Error reading Excel file: {e}")
             return []

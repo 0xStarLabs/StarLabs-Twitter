@@ -3,6 +3,14 @@ from loguru import logger
 from src.model.twitter.constants import Constants
 from src.utils.client import create_twitter_client
 from curl_cffi.requests import AsyncSession
+from urllib.parse import urlparse
+import bs4
+from src.model.twitter.x_transaction_id import ClientTransaction
+from src.model.twitter.x_transaction_id.generator import generate_simple_transaction_id
+from src.model.twitter.x_transaction_id.utils import (
+    handle_x_migration_async,
+    get_ondemand_file_url,
+)
 
 from src.utils.config import Config
 from src.utils.decorators import retry_async
@@ -79,9 +87,36 @@ class Twitter:
     @retry_async(default_value=False)
     async def like(self, tweet_id: str):
         try:
+            # Prepare URL and method for transaction ID
+            url = f"https://x.com/i/api/graphql/{Constants.LIKE_QUERY_ID}/FavoriteTweet"
+            method = "POST"
+            path = urlparse(url=url).path
+
+            # Generate X-Client-Transaction-Id
+            transaction_id = None
+            try:
+                transaction_id = generate_simple_transaction_id(
+                    method=method,
+                    path=path,
+                    csrf_token=self.csrf_token,
+                    username=self.username,
+                    account_index=self.account_index,
+                )
+                logger.info(
+                    f"[{self.account_index}] Generated X-Client-Transaction-Id for like request"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"[{self.account_index}] Failed to generate transaction ID: {e}"
+                )
+
             headers = {
                 "x-csrf-token": self.csrf_token,
             }
+
+            # Add X-Client-Transaction-Id header if available
+            if transaction_id:
+                headers["X-Client-Transaction-Id"] = transaction_id
 
             json_data = {
                 "variables": {
@@ -91,7 +126,7 @@ class Twitter:
             }
 
             response = await self.session.post(
-                f"https://x.com/i/api/graphql/{Constants.LIKE_QUERY_ID}/FavoriteTweet",
+                url,
                 headers=headers,
                 json=json_data,
             )
@@ -126,11 +161,40 @@ class Twitter:
             if not user_info:
                 raise Exception(f"failed to get user info")
 
+            # Prepare URL and method for transaction ID
+            url = "https://x.com/i/api/1.1/friendships/create.json"
+            method = "POST"
+            path = urlparse(url=url).path
+
+            # Generate X-Client-Transaction-Id
+            transaction_id = None
+            try:
+                transaction_id = generate_simple_transaction_id(
+                    method=method,
+                    path=path,
+                    csrf_token=self.csrf_token,
+                    user_info=user_info,
+                    username=self.username,
+                    account_index=self.account_index,
+                )
+                logger.info(
+                    f"[{self.account_index}] Generated X-Client-Transaction-Id for follow request"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"[{self.account_index}] Failed to generate transaction ID: {e}"
+                )
+                transaction_id = None
+
             headers = {
                 "content-type": "application/x-www-form-urlencoded",
                 "referer": f"https://x.com/{username}",
                 "x-csrf-token": self.csrf_token,
             }
+
+            # Add X-Client-Transaction-Id header if available
+            if transaction_id:
+                headers["X-Client-Transaction-Id"] = transaction_id
 
             data = {
                 "include_profile_interstitial_type": "1",
@@ -149,7 +213,7 @@ class Twitter:
             }
 
             response = await self.session.post(
-                f"https://x.com/i/api/1.1/friendships/create.json",
+                url,
                 headers=headers,
                 data=data,
             )
@@ -180,11 +244,39 @@ class Twitter:
             if not user_info:
                 raise Exception(f"failed to get user info")
 
+            # Prepare URL and method for transaction ID
+            url = "https://x.com/i/api/1.1/friendships/destroy.json"
+            method = "POST"
+            path = urlparse(url=url).path
+
+            # Generate X-Client-Transaction-Id
+            transaction_id = None
+            try:
+                transaction_id = generate_simple_transaction_id(
+                    method=method,
+                    path=path,
+                    csrf_token=self.csrf_token,
+                    user_info=user_info,
+                    username=self.username,
+                    account_index=self.account_index,
+                )
+                logger.info(
+                    f"[{self.account_index}] Generated X-Client-Transaction-Id for unfollow request"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"[{self.account_index}] Failed to generate transaction ID: {e}"
+                )
+
             headers = {
                 "content-type": "application/x-www-form-urlencoded",
                 "referer": f"https://x.com/{username}",
                 "x-csrf-token": self.csrf_token,
             }
+
+            # Add X-Client-Transaction-Id header if available
+            if transaction_id:
+                headers["X-Client-Transaction-Id"] = transaction_id
 
             data = {
                 "include_profile_interstitial_type": "1",
@@ -203,7 +295,7 @@ class Twitter:
             }
 
             response = await self.session.post(
-                "https://x.com/i/api/1.1/friendships/destroy.json",
+                url,
                 headers=headers,
                 data=data,
             )
@@ -230,9 +322,36 @@ class Twitter:
     @retry_async(default_value=False)
     async def retweet(self, tweet_id: str):
         try:
+            # Prepare URL and method for transaction ID
+            url = f"https://x.com/i/api/graphql/{Constants.RETWEET_QUERY_ID}/CreateRetweet"
+            method = "POST"
+            path = urlparse(url=url).path
+
+            # Generate X-Client-Transaction-Id
+            transaction_id = None
+            try:
+                transaction_id = generate_simple_transaction_id(
+                    method=method,
+                    path=path,
+                    csrf_token=self.csrf_token,
+                    username=self.username,
+                    account_index=self.account_index,
+                )
+                logger.info(
+                    f"[{self.account_index}] Generated X-Client-Transaction-Id for retweet request"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"[{self.account_index}] Failed to generate transaction ID: {e}"
+                )
+
             headers = {
                 "x-csrf-token": self.csrf_token,
             }
+
+            # Add X-Client-Transaction-Id header if available
+            if transaction_id:
+                headers["X-Client-Transaction-Id"] = transaction_id
 
             json_data = {
                 "variables": {
@@ -243,7 +362,7 @@ class Twitter:
             }
 
             response = await self.session.post(
-                f"https://x.com/i/api/graphql/{Constants.RETWEET_QUERY_ID}/CreateRetweet",
+                url,
                 headers=headers,
                 json=json_data,
             )
@@ -302,8 +421,28 @@ class Twitter:
                 if not media_id:
                     raise Exception("Failed to upload media")
 
-            # Build URL and request body
-            base_url = f"https://twitter.com/i/api/graphql/{Constants.TWEET_QUERY_ID}/CreateTweet"
+            # Prepare URL and method for transaction ID
+            url = f"https://twitter.com/i/api/graphql/{Constants.TWEET_QUERY_ID}/CreateTweet"
+            method = "POST"
+            path = urlparse(url=url).path
+
+            # Generate X-Client-Transaction-Id
+            transaction_id = None
+            try:
+                transaction_id = generate_simple_transaction_id(
+                    method=method,
+                    path=path,
+                    csrf_token=self.csrf_token,
+                    username=self.username,
+                    account_index=self.account_index,
+                )
+                logger.info(
+                    f"[{self.account_index}] Generated X-Client-Transaction-Id for tweet request"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"[{self.account_index}] Failed to generate transaction ID: {e}"
+                )
 
             # Build variables based on options
             variables = {
@@ -377,8 +516,12 @@ class Twitter:
                 "x-csrf-token": self.csrf_token,
             }
 
+            # Add X-Client-Transaction-Id header if available
+            if transaction_id:
+                headers["X-Client-Transaction-Id"] = transaction_id
+
             response = await self.session.post(
-                base_url,
+                url,
                 headers=headers,
                 json=request_body,
             )
@@ -444,10 +587,28 @@ class Twitter:
                 if not media_id:
                     raise Exception("Failed to upload media")
 
-            # Build URL and request body
-            base_url = (
-                f"https://x.com/i/api/graphql/{Constants.TWEET_QUERY_ID}/CreateTweet"
-            )
+            # Prepare URL and method for transaction ID
+            url = f"https://x.com/i/api/graphql/{Constants.TWEET_QUERY_ID}/CreateTweet"
+            method = "POST"
+            path = urlparse(url=url).path
+
+            # Generate X-Client-Transaction-Id
+            transaction_id = None
+            try:
+                transaction_id = generate_simple_transaction_id(
+                    method=method,
+                    path=path,
+                    csrf_token=self.csrf_token,
+                    username=self.username,
+                    account_index=self.account_index,
+                )
+                logger.info(
+                    f"[{self.account_index}] Generated X-Client-Transaction-Id for comment request"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"[{self.account_index}] Failed to generate transaction ID: {e}"
+                )
 
             # Build variables based on options
             variables = {
@@ -523,8 +684,12 @@ class Twitter:
                 "x-csrf-token": self.csrf_token,
             }
 
+            # Add X-Client-Transaction-Id header if available
+            if transaction_id:
+                headers["X-Client-Transaction-Id"] = transaction_id
+
             response = await self.session.post(
-                base_url,
+                url,
                 headers=headers,
                 json=request_body,
             )
@@ -589,11 +754,36 @@ class Twitter:
         }
         """
         try:
+            # Prepare URL and method for transaction ID
+            url = "https://x.com/i/api/graphql/32pL5BWe9WKeSK1MoPvFQQ/UserByScreenName"
+            method = "GET"
+            path = urlparse(url=url).path
+
+            # Generate X-Client-Transaction-Id
+            transaction_id = None
+            try:
+                transaction_id = generate_simple_transaction_id(
+                    method=method,
+                    path=path,
+                    csrf_token=self.csrf_token,
+                    username=self.username,
+                    account_index=self.account_index,
+                )
+            except Exception as e:
+                logger.warning(
+                    f"[{self.account_index}] Failed to generate transaction ID: {e}"
+                )
+
             headers = {
                 "content-type": "application/json",
                 "referer": f"https://x.com/{username}",
                 "x-csrf-token": self.csrf_token,
             }
+
+            # Add X-Client-Transaction-Id header if available
+            if transaction_id:
+                headers["X-Client-Transaction-Id"] = transaction_id
+
             params = {
                 "variables": f'{{"screen_name":"{username}"}}',
                 "features": '{"hidden_profile_subscriptions_enabled":true,"profile_label_improvements_pcf_label_in_post_enabled":true,"rweb_tipjar_consumption_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"subscriptions_verification_info_is_identity_verified_enabled":true,"subscriptions_verification_info_verified_since_enabled":true,"highlights_tweets_tab_ui_enabled":true,"responsive_web_twitter_article_notes_tab_enabled":true,"subscriptions_feature_can_gift_premium":true,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"responsive_web_graphql_timeline_navigation_enabled":true}',
@@ -601,7 +791,7 @@ class Twitter:
             }
 
             response = await self.session.get(
-                "https://x.com/i/api/graphql/32pL5BWe9WKeSK1MoPvFQQ/UserByScreenName",
+                url,
                 params=params,
                 headers=headers,
             )
@@ -632,15 +822,42 @@ class Twitter:
             str: The media ID if successful, None otherwise
         """
         try:
+            # Prepare URL and method for transaction ID
+            url = "https://upload.twitter.com/1.1/media/upload.json"
+            method = "POST"
+            path = urlparse(url=url).path
+
+            # Generate X-Client-Transaction-Id
+            transaction_id = None
+            try:
+                transaction_id = generate_simple_transaction_id(
+                    method=method,
+                    path=path,
+                    csrf_token=self.csrf_token,
+                    username=self.username,
+                    account_index=self.account_index,
+                )
+                logger.info(
+                    f"[{self.account_index}] Generated X-Client-Transaction-Id for media upload"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"[{self.account_index}] Failed to generate transaction ID: {e}"
+                )
+
             headers = {
                 "content-type": "application/x-www-form-urlencoded",
                 "x-csrf-token": self.csrf_token,
             }
 
+            # Add X-Client-Transaction-Id header if available
+            if transaction_id:
+                headers["X-Client-Transaction-Id"] = transaction_id
+
             data = {"media_data": media_base64}
 
             response = await self.session.post(
-                "https://upload.twitter.com/1.1/media/upload.json",
+                url,
                 headers=headers,
                 data=data,
             )
@@ -668,8 +885,26 @@ class Twitter:
     @retry_async(default_value=None)
     async def get_account_username(self):
         try:
-            # Build URL with query parameters
+            # Prepare URL and method for transaction ID
             base_url = "https://api.x.com/graphql/UhddhjWCl-JMqeiG4vPtvw/Viewer"
+            method = "GET"
+            path = urlparse(url=base_url).path
+
+            # Generate X-Client-Transaction-Id
+            transaction_id = None
+            try:
+                transaction_id = generate_simple_transaction_id(
+                    method=method,
+                    path=path,
+                    csrf_token=self.csrf_token,
+                    username=self.username,
+                    account_index=self.account_index,
+                )
+
+            except Exception as e:
+                logger.warning(
+                    f"[{self.account_index}] Failed to generate transaction ID: {e}"
+                )
 
             params = {
                 "variables": '{"withCommunitiesMemberships":true}',
@@ -681,6 +916,10 @@ class Twitter:
                 "x-csrf-token": self.csrf_token,
                 "x-twitter-active-user": "no",
             }
+
+            # Add X-Client-Transaction-Id header if available
+            if transaction_id:
+                headers["X-Client-Transaction-Id"] = transaction_id
 
             response = await self.session.get(
                 base_url,

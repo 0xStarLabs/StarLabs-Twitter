@@ -6,7 +6,7 @@ from .proxy_parser import Proxy
 from .config_browser import run
 from .constants import Account, MAIN_MENU_OPTIONS
 from .logs import update_account_in_excel
-
+from .check_github_version import check_version
 __all__ = [
     "Account",
     "create_twitter_client",
@@ -23,4 +23,5 @@ __all__ = [
     "update_account_in_excel",
     "show_menu",
     "MAIN_MENU_OPTIONS",
+    "check_version",
 ]

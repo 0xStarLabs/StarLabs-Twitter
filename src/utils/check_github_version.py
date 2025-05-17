@@ -1,164 +1,155 @@
 import aiohttp
 import os
-from datetime import datetime, timezone
-import time
-from typing import Tuple
+import json
+from datetime import datetime
+from typing import Tuple, Optional, List, Dict
+from rich.console import Console
+from rich.table import Table
+from rich import box
+import re
+
+console = Console()
 
 
-async def get_github_last_commit(
-    repo_owner: str, repo_name: str
-) -> Tuple[str, str, str]:
+class VersionInfo:
+    def __init__(self, VERSION: str, UPDATE_DATE: str, CHANGES: List[str]):
+        self.version = VERSION
+        self.update_date = UPDATE_DATE
+        self.changes = CHANGES
+
+
+async def fetch_versions_json(
+    repo_owner: str, repo_name: str, proxy: Optional[str] = None
+) -> List[VersionInfo]:
     """
-    Fetch the latest commit info from GitHub
-    Returns: (commit_hash, commit_date, commit_message)
+    Fetch versions information from GitHub repository
     """
-    async with aiohttp.ClientSession() as session:
-        try:
-            # Add headers to avoid rate limiting and get fresh data
-            headers = {
-                "Accept": "application/vnd.github.v3+json",
-                "If-None-Match": "",  # Ignore cache
-                "Cache-Control": "no-cache",
-            }
+    url = f"https://raw.githubusercontent.com/{repo_owner}/{repo_name}/refs/heads/main/0g.json"
 
-            # Try main branch first
-            url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/commits/main"
-            async with session.get(url, headers=headers) as response:
-                if response.status == 404:
-                    url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/commits/master"
-                    async with session.get(url, headers=headers) as response:
-                        if response.status == 200:
-                            data = await response.json()
+    headers = {
+        "Accept": "application/json",
+        "Cache-Control": "no-cache",
+        "User-Agent": "Mozilla/5.0",
+    }
 
-                            return (
-                                data["sha"][:7],
-                                data["commit"]["author"]["date"],
-                                data["commit"]["message"],
-                            )
-                elif response.status == 200:
-                    data = await response.json()
-                    return (
-                        data["sha"][:7],
-                        data["commit"]["author"]["date"],
-                        data["commit"]["message"],
+    proxy_url = None
+    if proxy:
+        proxy_url = f"http://{proxy}"
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, proxy=proxy_url) as response:
+                if response.status == 200:
+                    data = await response.text()
+
+                    # Clean the JSON string while preserving spaces in values
+                    # First, temporarily replace spaces in values with a special marker
+                    # Find all string values and replace their spaces with a marker
+                    data = re.sub(
+                        r'"([^"]*)"', lambda m: m.group(0).replace(" ", "§"), data
                     )
 
-                print(f"Debug - GitHub API Status: {response.status}")  # Debug print
+                    # Now clean the JSON structure
+                    data = data.replace(" ", "").replace("\n", "").replace("\t", "")
+                    data = data.replace(",]", "]").replace(",}", "}")
+                    while ",," in data:
+                        data = data.replace(",,", ",")
 
-            current_time = datetime.now(timezone.utc)
-            print(f"Debug - Fallback time: {current_time.isoformat()}")  # Debug print
-            return "unknown", current_time.isoformat(), "unknown"
-        except Exception as e:
-            print(f"❌ Error fetching GitHub commit info: {e}")
-            current_time = datetime.now(timezone.utc)
-            print(
-                f"Debug - Error fallback time: {current_time.isoformat()}"
-            )  # Debug print
-            return "unknown", current_time.isoformat(), "unknown"
+                    # Restore spaces in values
+                    data = data.replace("§", " ")
 
-
-def get_local_commit_info() -> tuple[str, str]:
-    """
-    Get local commit info
-    Returns: (commit_hash, commit_date)
-    """
-    try:
-        version_file = os.path.join(os.path.dirname(__file__), "..", "version.txt")
-        if os.path.exists(version_file):
-            with open(version_file, "r") as f:
-                content = f.read().strip().split(",")
-                if len(content) == 2:
-                    return content[0], content[1]
-        return None, None
+                    json_data = json.loads(data)
+                    return [VersionInfo(**version) for version in json_data]
+                else:
+                    print("❌ Failed to fetch versions from GitHub")
+                    if response.status == 403:
+                        print("ℹ️ GitHub API rate limit exceeded or access denied")
+                    elif response.status == 404:
+                        print("ℹ️ Version file not found")
+                    print("\n💡 You can try using a proxy by adding it to main.py:")
+                    print("   await check_version(VERSION, proxy='user:pass@ip:port')")
+                    return []
+    except aiohttp.ClientError as e:
+        print(f"❌ Network error while fetching versions: {e}")
+        print("\n💡 You can try using a proxy by adding it to main.py:")
+        print("   await check_version(VERSION, proxy='user:pass@ip:port')")
+        return []
+    except json.JSONDecodeError as e:
+        print(f"❌ Error parsing version data: {e}")
+        print("ℹ️ The version file format might be incorrect")
+        return []
     except Exception as e:
-        print(f"❌ Error reading local version: {e}")
-        return None, None
+        print(f"❌ Unexpected error: {e}")
+        return []
 
 
-async def compare_versions(
-    local_date: str,
-    github_date: str,
-    local_hash: str,
-    github_hash: str,
-    commit_message: str,
-) -> Tuple[bool, str]:
+def format_version_changes(versions: List[VersionInfo]) -> None:
     """
-    Compare local and GitHub versions using commit dates
-    Returns: (is_latest, message)
+    Format version changes into a nice table output
     """
+    if not versions:
+        return
+
     try:
-        # Format github date for display (always in UTC)
-        github_dt = datetime.fromisoformat(github_date.replace("Z", "+00:00"))
-        formatted_date = github_dt.strftime("%d.%m.%Y %H:%M UTC")
+        table = Table(
+            show_header=True,
+            box=box.DOUBLE,
+            border_style="bright_cyan",
+            pad_edge=False,
+            width=85,
+            highlight=True,
+        )
 
-        # Если хеши совпадают - у нас последняя версия
-        if local_hash == github_hash:
-            return (
-                True,
-                f"✅ You have the latest version (commit from {formatted_date})",
+        table.add_column("Version", style="cyan", justify="center")
+        table.add_column("Update Date", style="magenta", justify="center")
+        table.add_column("Changes", style="green")
+
+        for i, version in enumerate(versions):
+            changes_str = "\n".join(f"• {change}" for change in version.changes)
+            table.add_row(
+                f"✨ {version.version}", f"📅 {version.update_date}", changes_str
             )
+            # Add separator after each row except the last one
+            if i < len(versions) - 1:
+                table.add_row("─" * 12, "─" * 21, "─" * 40, style="dim")
 
-        # Если хеши разные - нужно обновление
-        return (
-            False,
-            f"⚠️ Update available!\n"
-            f"📅 Latest update released: {formatted_date}\n"
-            f"ℹ️ To update, use: git pull\n"
-            f"📥 Or download from: https://github.com/0xStarLabs/StarLabs-MegaETH",
-        )
-
+        print("📋 Available Updates:")
+        console.print(table)
+        print()
     except Exception as e:
-        print(f"❌ Error comparing versions: {e}")
-        return False, "Error comparing versions"
+        print(f"❌ Error displaying version information: {e}")
 
 
-def save_current_version(commit_hash: str, commit_date: str) -> None:
+async def check_version(
+    current_version: str,
+    repo_owner: str = "0xStarLabs",
+    repo_name: str = "VersionsControl",
+    proxy: Optional[str] = None,
+) -> bool:
     """
-    Save current version info to version.txt
+    Check if current version is up to date
     """
     try:
-        version_file = os.path.join(
-            os.path.dirname(__file__), "..", "version.txt"
-        )  # Changed path to /src
-        with open(version_file, "w") as f:
-            f.write(f"{commit_hash},{commit_date}")
-    except Exception as e:
-        print(f"❌ Error saving version info: {e}")
+        print("🔍 Checking for updates...")
 
+        versions = await fetch_versions_json(repo_owner, repo_name, proxy)
+        if not versions:
+            return True
 
-async def check_version(repo_owner: str, repo_name: str) -> bool:
-    """
-    Main function to check versions and print status
-    """
-    print("🔍 Checking version...")
+        # Sort versions by version number
+        versions.sort(key=lambda x: [int(n) for n in x.version.split(".")])
+        latest_version = versions[-1]
 
-    # Получаем информацию о последнем коммите с GitHub
-    github_hash, github_date, commit_message = await get_github_last_commit(
-        repo_owner, repo_name
-    )
+        current_version_parts = [int(n) for n in current_version.split(".")]
+        latest_version_parts = [int(n) for n in latest_version.version.split(".")]
 
-    # Получаем локальную версию
-    local_hash, local_date = get_local_commit_info()
+        if current_version_parts < latest_version_parts:
+            print(f"⚠️ New version available: {latest_version.version}")
+            format_version_changes(versions)
+            return False
 
-    # Если это первый запуск
-    if local_hash is None:
-        save_current_version(github_hash, github_date)
-        github_dt = datetime.fromisoformat(github_date.replace("Z", "+00:00"))
-        formatted_date = github_dt.strftime("%d.%m.%Y %H:%M UTC")
-        print(
-            f"📥 Initializing version tracking...\n"
-            f"📅 Current version from: {formatted_date} \n"
-        )
+        print(f"✅ You are running the latest version ({current_version})")
         return True
-
-    # Сравниваем версии
-    is_latest, message = await compare_versions(
-        local_date, github_date, local_hash, github_hash, commit_message
-    )
-    print(message)
-
-    # Если версии разные, обновляем локальную версию
-    if not is_latest:
-        save_current_version(github_hash, github_date)
-
-    return is_latest
+    except Exception as e:
+        print(f"❌ Error checking version: {e}")
+        return True  # Return True to allow the program to continue running

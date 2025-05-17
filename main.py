@@ -9,6 +9,9 @@ from process import start
 from src.utils.output import show_logo, show_dev_info
 from src.utils.check_github_version import check_version
 
+VERSION = "2.1.0"
+
+
 if platform.system() == "Windows":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
@@ -16,7 +19,10 @@ if platform.system() == "Windows":
 async def main():
     show_logo()
     show_dev_info()
-    
+
+    # You can pass a proxy string in format "user:pass@ip:port" if needed
+    await check_version(VERSION, proxy="")
+
     configuration()
     await start()
 
